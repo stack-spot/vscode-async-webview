@@ -1,0 +1,23 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+  // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+  "typescript.tsc.autoDetect": "off",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/out": true
+  },
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "editor.rulers": [140],
+  "typescript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "remove",
+  "typescript.format.semicolons": "remove",
+  "typescript.preferences.importModuleSpecifier": "project-relative",
+  "cSpell.words": [
+    "stackspot",
+    "codebuddy",
+    "firefox",
+    "unpromisify",
+    "keycloak"
+  ],
+}

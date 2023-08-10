@@ -1,0 +1,24 @@
+{
+  "name": "@stack-spot/vscode-async-webview-backend",
+  "version": "0.1.0",
+  "main": "out/index.js",
+  "module": "out/index.mjs",
+  "typings": "out/index.d.ts",
+  "scripts": {
+    "compile": "rollup -c"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "@stack-spot/vscode-async-webview-shared": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.195",
+    "@types/node": "20.2.5",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^4.9.4",
+    "esbuild": "^0.18.16",
+    "rollup": "^3.26.3",
+    "rollup-plugin-dts": "^5.3.0",
+    "rollup-plugin-esbuild": "^5.0.0"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "@stack-spot/vscode-async-webview-backend",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "out/index.js",
   "module": "out/index.mjs",
   "typings": "out/index.d.ts",
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "lodash": "^4.17.21",
-    "@stack-spot/vscode-async-webview-shared": "^0.1.0"
+    "@stack-spot/vscode-async-webview-shared": "^0.2.0"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.195",

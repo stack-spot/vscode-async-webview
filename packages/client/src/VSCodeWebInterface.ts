@@ -1,4 +1,4 @@
-import { AsyncStateful, StateTypeOf } from 'vscode-webview-shared'
+import { AsyncStateful, StateTypeOf } from '@stack-spot/vscode-async-webview-shared'
 
 type Unpromisify<T> = T extends Promise<infer R> ? Unpromisify<R> : T
 

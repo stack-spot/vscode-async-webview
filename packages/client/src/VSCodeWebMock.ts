@@ -1,4 +1,4 @@
-import { AsyncStateful, StateTypeOf } from 'vscode-webview-shared'
+import { AsyncStateful, StateTypeOf } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedAPI, VSCodeWebInterface } from './VSCodeWebInterface'
 
 export type APIMock<T extends AsyncStateful<any>> = Partial<LinkedAPI<T>>

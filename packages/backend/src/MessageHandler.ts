@@ -10,7 +10,7 @@ import {
   WebviewMessage,
   logger,
   errorToString,
-} from 'vscode-webview-shared'
+} from '@stack-spot/vscode-async-webview-shared'
 import { AnyFunction } from './types'
 
 interface Dependencies {

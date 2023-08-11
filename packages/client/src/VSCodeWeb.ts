@@ -12,7 +12,7 @@ import {
   StateTypeOf,
   logger,
   buildGetStateError,
-} from 'vscode-webview-shared'
+} from '@stack-spot/vscode-async-webview-shared'
 import { LinkedAPI, VSCodeWebInterface } from './VSCodeWebInterface'
 
 export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<API> {

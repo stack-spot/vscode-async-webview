@@ -1,5 +1,5 @@
 import { Webview } from 'vscode'
-import { AsyncState, AsyncStateful, asWebViewMessage, logger } from 'vscode-webview-shared'
+import { AsyncState, AsyncStateful, asWebViewMessage, logger } from '@stack-spot/vscode-async-webview-shared'
 import { MessageHandler } from './MessageHandler'
 import { AnyFunction } from './types'
 

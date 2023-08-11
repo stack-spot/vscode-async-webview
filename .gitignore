@@ -1,6 +1,3 @@
 .DS_Store
 node_modules
-/packages/vscode-webview-backend/out
-/packages/vscode-webview-client/out
-/packages/vscode-webview-shared/out
-/packages/vscode-webview-react/out
+out

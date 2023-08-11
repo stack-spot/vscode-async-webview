@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises'
 import { camelCase } from 'lodash'
 import { Uri, ViewColumn, Webview, WebviewOptions, WebviewPanel, WebviewPanelOptions, window } from 'vscode'
-import { ManualPromise, errorToString } from 'vscode-webview-shared'
+import { ManualPromise, errorToString } from '@stack-spot/vscode-async-webview-shared'
 import { VSCodeWebviewAPI } from './VSCodeWebviewAPI'
 import { ViewOptions } from './types'
 

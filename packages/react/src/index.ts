@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import { StateTypeOf, VSCodeWebInterface } from 'vscode-webview-client'
+import { StateTypeOf, VSCodeWebInterface } from '@stack-spot/vscode-async-webview-client'
 
 interface VSCodeHooks<T extends VSCodeWebInterface> {
   useState: <

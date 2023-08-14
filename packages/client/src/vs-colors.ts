@@ -1,3 +1,6 @@
+/**
+ * An object with a comprehensive list of every css variable available in a VSCode extension.
+ */
 export const vsColors = {
   fontFamily: '--vscode-font-family',
   fontWeight: '--vscode-font-weight',

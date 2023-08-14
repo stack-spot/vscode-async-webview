@@ -3,8 +3,8 @@ import {
   WebviewRequestMessage,
   WebviewResponseMessage,
   ManualPromise,
-  buildAPIError,
-  buildAPIResponse,
+  buildBridgeError,
+  buildBridgeResponse,
   buildGetStateRequest,
   buildSetStateRequest,
   WebviewMessage,
@@ -16,7 +16,7 @@ import { AnyFunction } from './types'
 interface Dependencies {
   sendMessageToClient: (message: WebviewMessage) => void,
   listenToMessagesFromClient: (listener: (message: WebviewMessage) => void) => void,
-  getAPIHandler: (name: string) => AnyFunction | undefined,
+  getBridgeHandler: (name: string) => AnyFunction | undefined,
 }
 
 export class MessageHandler {
@@ -29,25 +29,25 @@ export class MessageHandler {
     this.listen()
   }
 
-  private async handleRequestToAPI(message: WebviewRequestMessage) {
-    logger.debug('handling api call:', message)
+  private async handleRequestToBridge(message: WebviewRequestMessage) {
+    logger.debug('handling bridge call:', message)
     const { id, property = '', arguments: args = [] } = message
-    const fn = this.deps.getAPIHandler(property)
+    const fn = this.deps.getBridgeHandler(property)
     if (!fn) {
-      const error = `"${property}" is not a method or function of the api provided to the VSCodeWebview.`
-      this.deps.sendMessageToClient(buildAPIError(id, error))
+      const error = `"${property}" is not a method or function of the bridge provided to the VSCodeWebview.`
+      this.deps.sendMessageToClient(buildBridgeError(id, error))
     }
     let functionHasExecuted = false
     try {
       const result = await fn!(...args)
       functionHasExecuted = true
-      logger.debug('sending api response to client:', result)
-      this.deps.sendMessageToClient(buildAPIResponse(id, result))
+      logger.debug('sending bridge response to client:', result)
+      this.deps.sendMessageToClient(buildBridgeResponse(id, result))
     } catch (error: any) {
       const message = functionHasExecuted
-        ? `Error while sending message to client. Please make sure the return value of the method "${property}" in the API provided to the VSCodeWebview is serializable.`
+        ? `Error while sending message to client. Please make sure the return value of the method "${property}" in the Bridge provided to the VSCodeWebview is serializable.`
         : `Error while running method "${property}". Cause: ${errorToString(error)}.`
-      this.deps.sendMessageToClient(buildAPIError(id, message))
+      this.deps.sendMessageToClient(buildBridgeError(id, message))
       throw error
     }
   }
@@ -72,8 +72,8 @@ export class MessageHandler {
   private listen() {
     this.deps.listenToMessagesFromClient(async (message) => {
       switch (message?.type) {
-        case messageType.api:
-          this.handleRequestToAPI(message)
+        case messageType.bridge:
+          this.handleRequestToBridge(message)
           break
         case messageType.getState:
           this.handleStateResponse('get', message)

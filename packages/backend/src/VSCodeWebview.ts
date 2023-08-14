@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises'
 import { camelCase } from 'lodash'
 import { Uri, ViewColumn, Webview, WebviewOptions, WebviewPanel, WebviewPanelOptions, window } from 'vscode'
 import { ManualPromise, errorToString } from '@stack-spot/vscode-async-webview-shared'
-import { VSCodeWebviewAPI } from './VSCodeWebviewAPI'
+import { VSCodeWebviewBridge } from './VSCodeWebviewBridge'
 import { ViewOptions } from './types'
 
 interface ViewColumnWithFocus {
@@ -12,24 +12,42 @@ interface ViewColumnWithFocus {
 type ShowOptions = ViewColumn | ViewColumnWithFocus
 type PanelOptions = WebviewPanelOptions & WebviewOptions
 
-interface Options<API extends VSCodeWebviewAPI<any>> extends ViewOptions<API> {
+interface Options<Bridge extends VSCodeWebviewBridge<any>> extends ViewOptions<Bridge> {
+  /**
+   * Which ViewColumn would you like to use?
+   */
   showOptions?: ShowOptions,
+  /**
+   * The options for the panel containing the webview.
+   */
   options?: PanelOptions,
 }
 
-export class VSCodeWebview<API extends VSCodeWebviewAPI<any> = VSCodeWebviewAPI<any>> {
+/**
+ * Represents a Webview loaded into the extension. It creates a Bridge and a State shared between both the extension and the webview.
+ * 
+ * It creates a Panel with a Webview. The panel is first created when `show()` is called for the first time.
+ * 
+ * The Webview must be a separate project already compiled (bundled). `path`, in the constructor, must refer to the path to the site
+ * directory inside the final extension bundle. This path must be relative to the package.json in the root of the bundle.
+ * 
+ * If the file to load in the webview is not `index.html`, you should provide a value for `index` in the constructor.
+ * 
+ * To show a panel with a webview, first create the `VSCodeWebview` with the required config and then call `VSCodeWebview#show()`.
+ */
+export class VSCodeWebview<Bridge extends VSCodeWebviewBridge<any> = VSCodeWebviewBridge<any>> {
   protected readonly baseUri: Uri
   private readonly title: string
   readonly type: string
   private readonly showOptions: ShowOptions
   protected readonly options: PanelOptions | undefined
   private panel: WebviewPanel | undefined
-  protected readonly apiFactory: Options<API>['apiFactory']
-  protected api: API | undefined
+  protected readonly bridgeFactory: Options<Bridge>['bridgeFactory']
+  protected bridge: Bridge | undefined
   private htmlPromise: Promise<string>
   private html: string | undefined
   private readonly index: string
-  private apiPromise: ManualPromise<API> | undefined
+  private bridgePromise: ManualPromise<Bridge> | undefined
 
   constructor({
     path,
@@ -38,14 +56,14 @@ export class VSCodeWebview<API extends VSCodeWebviewAPI<any> = VSCodeWebviewAPI<
     type = camelCase(title),
     showOptions = ViewColumn.One,
     context,
-    apiFactory,
+    bridgeFactory,
     options,
-  }: Options<API>) {
+  }: Options<Bridge>) {
     this.baseUri = Uri.joinPath(context.extensionUri, path)
     this.title = title
     this.type = type
     this.showOptions = showOptions
-    this.apiFactory = apiFactory
+    this.bridgeFactory = bridgeFactory
     const basePath = process.platform === 'win32' ? this.baseUri.path.replace(/^\//, '') : this.baseUri.path
     this.htmlPromise = readFile(`${basePath}/${index}`, { encoding: 'utf-8' })
     this.index = index
@@ -74,16 +92,16 @@ export class VSCodeWebview<API extends VSCodeWebviewAPI<any> = VSCodeWebviewAPI<
     return this.html
   }
 
-  protected buildAPI(webview: Webview) {
+  protected buildBridge(webview: Webview) {
     try {
-      this.api = this.apiFactory?.call(null, webview)
-      if (this.api && this.apiPromise) {
-        this.apiPromise.resolve(this.api)
-        this.apiPromise = undefined
+      this.bridge = this.bridgeFactory?.call(null, webview)
+      if (this.bridge && this.bridgePromise) {
+        this.bridgePromise.resolve(this.bridge)
+        this.bridgePromise = undefined
       }
     } catch (error) {
       window.showErrorMessage([
-        "There was an error while building the webview: unable to instantiate the webview's API.",
+        "There was an error while building the webview: unable to instantiate the webview's Bridge.",
         `This is a bug, please report it to the team. Cause: ${errorToString(error)}`,
       ].join('\n'))
     }
@@ -91,13 +109,13 @@ export class VSCodeWebview<API extends VSCodeWebviewAPI<any> = VSCodeWebviewAPI<
 
   private async buildPanel() {
     this.panel = window.createWebviewPanel(this.type, this.title, this.showOptions, this.options)
-    this.buildAPI(this.panel.webview)
+    this.buildBridge(this.panel.webview)
     const html = await this.buildHtml(this.panel?.webview.asWebviewUri(this.baseUri))
     this.panel.webview.html = html
     this.panel.onDidDispose(() => {
       this.panel = undefined
-      this.api?.dispose()
-      this.api = undefined
+      this.bridge?.dispose()
+      this.bridge = undefined
     })
   }
 
@@ -105,26 +123,57 @@ export class VSCodeWebview<API extends VSCodeWebviewAPI<any> = VSCodeWebviewAPI<
     return html.replace('<head>', `<head><base href="${baseSrc}/">`)
   }
 
+  /**
+   * Shows the webview panel.
+   * If the panel has not yet been created, it's created.
+   * @param column the column to show the panel at.
+   */
   async show(column?: ViewColumn) {
     if (this.panel) this.panel.reveal(column)
     else await this.buildPanel()
   }
 
+  /**
+   * Gets a reference to the panel.
+   * 
+   * If the panel has not yet been created or if it has been disposed, undefined is returned.
+   * 
+   * @returns the current panel.
+   */
   getPanel() {
     return this.panel
   }
 
+  /**
+   * Gets the HTML of the webview.
+   * 
+   * If the webview hasn't been shown yet, this will be undefined.
+   * 
+   * @returns the html.
+   */
   getHTML() {
     return this.html
   }
 
-  getAPI() {
-    return this.api
+  /**
+   * Gets a reference to the current bridge.
+   * 
+   * If the bridge has not yet been created or it has been disposed, undefined is returned. The bridge is created/disposed at the same time
+   * as the panel.
+   * 
+   * @returns the current bridge.
+   */
+  getBridge() {
+    return this.bridge
   }
 
-  getAPIAsync() {
-    if (this.api) return Promise.resolve(this.api)
-    this.apiPromise = new ManualPromise()
-    return this.apiPromise.promise
+  /**
+   * Same as getBridge, but if the bridge has not yet been created, the promise returned will resolve once it's available.
+   * @returns a promise that resolves to the bridge.
+   */
+  getBridgeAsync() {
+    if (this.bridge) return Promise.resolve(this.bridge)
+    this.bridgePromise = new ManualPromise()
+    return this.bridgePromise.promise
   }
 }

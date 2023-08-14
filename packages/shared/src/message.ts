@@ -1,7 +1,7 @@
 import { uid } from 'uid'
 
 export const messageType = {
-  api: 'vscode-webview:api',
+  bridge: 'vscode-webview:bridge',
   getState: 'vscode-webview:get-state',
   setState: 'vscode-webview:set-state',
 } as const
@@ -37,18 +37,18 @@ export function asWebViewMessage(message: any): WebviewMessage | undefined {
   }
 }
 
-/* API messages */
+/* Bridge messages */
 
-export function buildAPIRequest(method: string, args: any[]): WebviewRequestMessage {
-  return { type: messageType.api, property: method, arguments: args, id: uid() }
+export function buildBridgeRequest(method: string, args: any[]): WebviewRequestMessage {
+  return { type: messageType.bridge, property: method, arguments: args, id: uid() }
 }
 
-export function buildAPIResponse(id: string, result: any): WebviewResponseMessage {
-  return { type: messageType.api, id, result }
+export function buildBridgeResponse(id: string, result: any): WebviewResponseMessage {
+  return { type: messageType.bridge, id, result }
 }
 
-export function buildAPIError(id: string, error: string): WebviewResponseMessage {
-  return { type: messageType.api, id, error }
+export function buildBridgeError(id: string, error: string): WebviewResponseMessage {
+  return { type: messageType.bridge, id, error }
 }
 
 /* GetState messages */

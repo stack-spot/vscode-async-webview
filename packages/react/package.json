@@ -1,6 +1,6 @@
 {
   "name": "@stack-spot/vscode-async-webview-react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "main": "out/index.js",
   "module": "out/index.mjs",
   "typings": "out/index.d.ts",
@@ -11,7 +11,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "@stack-spot/vscode-async-webview-client": "^0.2.0"
+    "@stack-spot/vscode-async-webview-client": ">=0.3.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",

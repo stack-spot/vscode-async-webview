@@ -6,23 +6,36 @@ import {
   buildGetStateResponse,
   buildSetStateResponse,
   messageType,
-  buildAPIRequest,
+  buildBridgeRequest,
   WebviewMessage,
   AsyncStateful,
   StateTypeOf,
   logger,
   buildGetStateError,
 } from '@stack-spot/vscode-async-webview-shared'
-import { LinkedAPI, VSCodeWebInterface } from './VSCodeWebInterface'
+import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
-export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<API> {
-  private state: StateTypeOf<API>
-  private listeners: Partial<{ [K in keyof StateTypeOf<API>]: ((value: StateTypeOf<API>[K]) => void)[] }> = {}
-  private apiCalls: Map<string, ManualPromise> = new Map()
-  readonly api = this.createAPIProxy() as LinkedAPI<API>
+/**
+ * This class is responsible for acquiring the vscode API and connecting the webview to the bridge. This should never be instantiated more
+ * than once.
+ * 
+ * To create an instance of VSCodeWeb, you must call `const vscode = new VSCodeWeb<BridgeType>(initialState)`. The bridge type must be
+ * informed as a generic and the initial state as a parameter. If the initial state should be empty, `{}` should be used.
+ * 
+ * This class can be mocked with `VSCodeWebMock`.
+ */
+export class VSCodeWeb<Bridge extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<Bridge> {
+  private state: StateTypeOf<Bridge>
+  private listeners: Partial<{ [K in keyof StateTypeOf<Bridge>]: ((value: StateTypeOf<Bridge>[K]) => void)[] }> = {}
+  private bridgeCalls: Map<string, ManualPromise> = new Map()
+  readonly bridge = this.createBridgeProxy() as LinkedBridge<Bridge>
+  /**
+   * Original vscode object obtained by calling `acquireVsCodeApi()`.
+   * Will be available after the first time the class is instantiated.
+   */
   static vscode: any
 
-  constructor(initialState: StateTypeOf<API>) {
+  constructor(initialState: StateTypeOf<Bridge>) {
     if (VSCodeWeb.vscode) {
       logger.warn('VSCodeWeb should not be instantiated more than once, this can cause unexpected behavior.')
     } else {
@@ -43,26 +56,26 @@ export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<str
     VSCodeWeb.vscode.postMessage(message)
   }
 
-  private handleAPIResponse(message: WebviewResponseMessage) {
-    logger.debug('handling api response:', message)
-    if (!this.apiCalls.has(message.id)) {
+  private handleBridgeResponse(message: WebviewResponseMessage) {
+    logger.debug('handling bridge response:', message)
+    if (!this.bridgeCalls.has(message.id)) {
       return logger.warn(
-        'could not resolve response from api because id is not registered. Maybe the response came while the view was inactive.',
+        'could not resolve response from bridge because id is not registered. Maybe the response came while the view was inactive.',
         message,
       )
     }
     if (message.error) {
-      this.apiCalls.get(message.id)?.reject(message.error)
+      this.bridgeCalls.get(message.id)?.reject(message.error)
     } else {
-      this.apiCalls.get(message.id)?.resolve(message.result)
+      this.bridgeCalls.get(message.id)?.resolve(message.result)
     }
-    this.apiCalls.delete(message.id)
+    this.bridgeCalls.delete(message.id)
   }
 
   private handleGetStateRequest(message : WebviewRequestMessage) {
     logger.debug('handling get state request:', message)
     try {
-      VSCodeWeb.sendMessageToExtension(buildGetStateResponse(message.id, this.getState(message.id as keyof StateTypeOf<API>)))
+      VSCodeWeb.sendMessageToExtension(buildGetStateResponse(message.id, this.getState(message.id as keyof StateTypeOf<Bridge>)))
     } catch (error) {
       VSCodeWeb.sendMessageToExtension(
         buildGetStateError(message.id, `Can't get state with name ${message.id}, please make sure its value is serializable.`)
@@ -73,7 +86,7 @@ export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<str
 
   private handleSetStateRequest(message: WebviewRequestMessage) {
     logger.debug('handling set state request:', message)
-    this.setState(message.property as keyof StateTypeOf<API>, message.arguments?.at(0))
+    this.setState(message.property as keyof StateTypeOf<Bridge>, message.arguments?.at(0))
     VSCodeWeb.sendMessageToExtension(buildSetStateResponse(message.id))
   }
 
@@ -81,8 +94,8 @@ export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<str
     window.addEventListener('message', ({ data }) => {
       const message = asWebViewMessage(data)
       switch (message?.type) {
-        case messageType.api: 
-          this.handleAPIResponse(message)
+        case messageType.bridge: 
+          this.handleBridgeResponse(message)
           break
         case messageType.getState:
           this.handleGetStateRequest(message)
@@ -93,7 +106,7 @@ export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<str
     })
   }
 
-  private createAPIProxy() {
+  private createBridgeProxy() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this
     return new Proxy({}, {
@@ -102,15 +115,15 @@ export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<str
         const manualPromise = new ManualPromise()
         // fixme: don't create this function on every get, instead, save it and return it if has already been created
         return (...args: any[]) => {
-          logger.debug('making call to api:', methodName, ...args)
+          logger.debug('making call to bridge:', methodName, ...args)
           try {
-            const message = buildAPIRequest(methodName, args)
-            self.apiCalls.set(message.id, manualPromise)
-            logger.debug('sending api message:', message)
+            const message = buildBridgeRequest(methodName, args)
+            self.bridgeCalls.set(message.id, manualPromise)
+            logger.debug('sending bridge message:', message)
             VSCodeWeb.sendMessageToExtension(message)
             return manualPromise.promise
           } catch (error) {
-            manualPromise.reject(`Can't call "${methodName}" on the webview API, please make sure its parameters are serializable.`)
+            manualPromise.reject(`Can't call "${methodName}" on the bridge, please make sure its parameters are serializable.`)
             throw error
           }
         }
@@ -118,27 +131,27 @@ export class VSCodeWeb<API extends AsyncStateful<any> = AsyncStateful<Record<str
     })
   }
 
-  private runListeners<Key extends keyof StateTypeOf<API>>(stateKey: Key, value: StateTypeOf<API>[Key]) {
+  private runListeners<Key extends keyof StateTypeOf<Bridge>>(stateKey: Key, value: StateTypeOf<Bridge>[Key]) {
     this.listeners[stateKey]?.forEach(l => l(value))
   }
 
-  getState<Key extends keyof StateTypeOf<API>>(key: Key): StateTypeOf<API>[Key] {
+  getState<Key extends keyof StateTypeOf<Bridge>>(key: Key): StateTypeOf<Bridge>[Key] {
     return this.state[key]
   }
 
-  setState<Key extends keyof StateTypeOf<API>>(key: Key, value: StateTypeOf<API>[Key]): void {
+  setState<Key extends keyof StateTypeOf<Bridge>>(key: Key, value: StateTypeOf<Bridge>[Key]): void {
     this.state[key] = value
     VSCodeWeb.vscode.setState(this.state)
     this.runListeners(key, value)
   }
 
-  initializeState(state: StateTypeOf<API>): void {
+  initializeState(state: StateTypeOf<Bridge>): void {
     this.state = { ...state }
     VSCodeWeb.vscode.setState(this.state)
     Object.keys(this.listeners).forEach(key => this.runListeners(key, state[key]))
   }
-
-  subscribe<Key extends keyof StateTypeOf<API>>(key: Key, listener: (value: StateTypeOf<API>[Key]) => void): () => void {
+  
+  subscribe<Key extends keyof StateTypeOf<Bridge>>(key: Key, listener: (value: StateTypeOf<Bridge>[Key]) => void): () => void {
     if (!this.listeners[key]) this.listeners[key] = []
     this.listeners[key]?.push(listener)
     return () => {

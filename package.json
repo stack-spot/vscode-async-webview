@@ -6,7 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "compile": "pnpm --filter @stack-spot/vscode-async-webview-shared compile && pnpm --filter @stack-spot/vscode-async-webview-backend compile && pnpm --filter @stack-spot/vscode-async-webview-client compile && pnpm --filter @stack-spot/vscode-async-webview-react compile"
+    "compile:shared": "pnpm --filter @stack-spot/vscode-async-webview-shared compile",
+    "compile:backend": "pnpm --filter @stack-spot/vscode-async-webview-backend compile",
+    "compile:client": "pnpm --filter @stack-spot/vscode-async-webview-client compile",
+    "compile:react": "pnpm --filter @stack-spot/vscode-async-webview-react compile",
+    "compile": "pnpm compile:shared && pnpm compile:backend && pnpm compile:client && pnpm compile:react"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",

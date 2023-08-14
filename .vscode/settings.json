@@ -18,6 +18,6 @@
     "codebuddy",
     "firefox",
     "unpromisify",
-    "keycloak"
+    "keycloak",
   ],
 }

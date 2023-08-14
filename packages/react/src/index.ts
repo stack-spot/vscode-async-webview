@@ -5,7 +5,7 @@ import { StateTypeOf, VSCodeWebInterface } from '@stack-spot/vscode-async-webvie
 
 interface VSCodeHooks<T extends VSCodeWebInterface> {
   useState: <
-    State extends (T extends VSCodeWebInterface<infer API> ? StateTypeOf<API> : never),
+    State extends (T extends VSCodeWebInterface<infer Bridge> ? StateTypeOf<Bridge> : never),
     Key extends keyof State,
   >(key: Key) => [State[Key], Dispatch<SetStateAction<State[Key]>>],
 }

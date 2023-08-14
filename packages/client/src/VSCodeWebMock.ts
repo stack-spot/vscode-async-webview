@@ -1,21 +1,21 @@
 import { AsyncStateful, StateTypeOf } from '@stack-spot/vscode-async-webview-shared'
-import { LinkedAPI, VSCodeWebInterface } from './VSCodeWebInterface'
+import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
-export type APIMock<T extends AsyncStateful<any>> = Partial<LinkedAPI<T>>
+export type BridgeMock<T extends AsyncStateful<any>> = Partial<LinkedBridge<T>>
 
-export class VSCodeWebMock <API extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<API> {
-  readonly api: LinkedAPI<API>
-  private state: StateTypeOf<API>
-  private readonly mockedApi: APIMock<API>
-  private listeners: Partial<{ [K in keyof StateTypeOf<API>]: ((value: StateTypeOf<API>[K]) => void)[] }> = {}
+export class VSCodeWebMock<Bridge extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<Bridge> {
+  readonly bridge: LinkedBridge<Bridge>
+  private state: StateTypeOf<Bridge>
+  private readonly mockedBridge: BridgeMock<Bridge>
+  private listeners: Partial<{ [K in keyof StateTypeOf<Bridge>]: ((value: StateTypeOf<Bridge>[K]) => void)[] }> = {}
 
-  constructor(initialState: StateTypeOf<API>, api: APIMock<API>) {
+  constructor(initialState: StateTypeOf<Bridge>, bridge: BridgeMock<Bridge>) {
     this.state = initialState
-    this.mockedApi = api
-    this.api = this.createAPIProxy()
+    this.mockedBridge = bridge
+    this.bridge = this.createBridgeProxy()
   }
 
-  private createAPIProxy() {
+  private createBridgeProxy() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this
     return new Proxy({}, {
@@ -23,35 +23,35 @@ export class VSCodeWebMock <API extends AsyncStateful<any> = AsyncStateful<Recor
         const methodName = String(property)
         return (...args: any[]) => {
           JSON.stringify(args) // simulates the serialization step
-          const fn = self.mockedApi[methodName as keyof typeof self.mockedApi]
-          if (typeof fn === 'function') return fn.apply(self.mockedApi, args)
+          const fn = self.mockedBridge[methodName as keyof typeof self.mockedBridge]
+          if (typeof fn === 'function') return fn.apply(self.mockedBridge, args)
           // eslint-disable-next-line no-console
-          console.log('(MOCK) called api method:', `${methodName}(${args.map((v) => JSON.stringify(v)).join(', ')})`)
+          console.log('(MOCK) called bridge method:', `${methodName}(${args.map((v) => JSON.stringify(v)).join(', ')})`)
         }
       },
-    }) as LinkedAPI<API>
+    }) as LinkedBridge<Bridge>
   }
 
-  private runListeners<Key extends keyof StateTypeOf<API>>(stateKey: Key, value: StateTypeOf<API>[Key]) {
+  private runListeners<Key extends keyof StateTypeOf<Bridge>>(stateKey: Key, value: StateTypeOf<Bridge>[Key]) {
     this.listeners[stateKey]?.forEach(l => l(value))
   }
 
-  getState<Key extends keyof StateTypeOf<API>>(key: Key): StateTypeOf<API>[Key] {
+  getState<Key extends keyof StateTypeOf<Bridge>>(key: Key): StateTypeOf<Bridge>[Key] {
     JSON.stringify(this.state[key])  // simulates serialization
     return this.state[key]
   }
 
-  setState<Key extends keyof StateTypeOf<API>>(key: Key, value: StateTypeOf<API>[Key]): void {
+  setState<Key extends keyof StateTypeOf<Bridge>>(key: Key, value: StateTypeOf<Bridge>[Key]): void {
     this.state[key] = value
     this.runListeners(key, value)
   }
 
-  initializeState(state: StateTypeOf<API>): void {
+  initializeState(state: StateTypeOf<Bridge>): void {
     this.state = { ...state }
     Object.keys(this.listeners).forEach(key => this.runListeners(key, state[key]))
   }
 
-  subscribe<Key extends keyof StateTypeOf<API>>(key: Key, listener: (value: StateTypeOf<API>[Key]) => void): () => void {
+  subscribe<Key extends keyof StateTypeOf<Bridge>>(key: Key, listener: (value: StateTypeOf<Bridge>[Key]) => void): () => void {
     if (!this.listeners[key]) this.listeners[key] = []
     this.listeners[key]?.push(listener)
     return () => {

@@ -36,7 +36,7 @@ This documentation assumes you're already familiar with the basics of the
 We're going to focus on a very simple example where the webview shows a VSCode notification and the VSCode notification interacts with the
 webview state. See the video below.
 
-![Sample extension video](./sample.mov)
+https://github.com/stack-spot/vscode-async-webview/assets/1119029/ca63df34-3d93-43a3-9055-de64e55fa416
 
 ## Extension
 ### `extension/src/extension.ts`:

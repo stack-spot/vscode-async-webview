@@ -1,6 +1,6 @@
 {
   "name": "@stack-spot/vscode-async-webview-shared",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "main": "out/index.js",
   "module": "out/index.mjs",
   "typings": "out/index.d.ts",

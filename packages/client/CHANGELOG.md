@@ -1,5 +1,16 @@
 # @stack-spot/vscode-async-webview-client
 
+## 0.4.0
+
+### Minor Changes
+
+- 0b865da: README
+
+### Patch Changes
+
+- Updated dependencies [0b865da]
+  - @stack-spot/vscode-async-webview-shared@0.4.0
+
 ## 0.2.0
 
 ### Minor Changes

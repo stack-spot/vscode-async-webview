@@ -1,6 +1,17 @@
 # @stack-spot/vscode-async-webview-react
 
-## 1.0.0
+## 0.4.0
+
+### Minor Changes
+
+- 0b865da: README
+
+### Patch Changes
+
+- Updated dependencies [0b865da]
+  - @stack-spot/vscode-async-webview-client@0.4.0
+
+## 0.3.0
 
 ### Minor Changes
 

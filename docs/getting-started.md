@@ -97,21 +97,21 @@ In order to press F5 in VSCode and run your extension, first, replace the conten
 
 ```json
 {
-	"version": "0.2.0",
-	"configurations": [
-		{
-			"name": "Run Extension",
-			"type": "extensionHost",
-			"request": "launch",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}/out"
-			],
-			"outFiles": [
-				"${workspaceFolder}/**/*.js",
-			],
-			"preLaunchTask": "${defaultBuildTask}"
-		}
-	]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/out"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/**/*.js",
+      ],
+      "preLaunchTask": "${defaultBuildTask}"
+    }
+  ]
 }
 ```
 
@@ -119,22 +119,22 @@ Now, replace the contents of `.vscode/tasks.json` with:
 
 ```json
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "npm",
-			"script": "vscode:prepublish",
-			"problemMatcher": "$tsc",
-			"isBackground": false,
-			"presentation": {
-				"reveal": "never"
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
-		},
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "vscode:prepublish",
+      "problemMatcher": "$tsc",
+      "isBackground": false,
+      "presentation": {
+        "reveal": "never"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+  ]
 }
 ```
 
@@ -189,19 +189,19 @@ import { VSCodeWebview } from '@stack-spot/vscode-async-webview-backend'
 import { Bridge } from './Bridge'
 
 export function activate(context: vscode.ExtensionContext) {
-	const webview = new VSCodeWebview({
-		type: '{name of the view}',
-		path: 'packages/webview',
-		title: '{title of the panel}',
-		bridgeFactory: (webview) => new Bridge(webview),
-		context,
-	})
+  const webview = new VSCodeWebview({
+    type: '{name of the view}',
+    path: 'packages/webview',
+    title: '{title of the panel}',
+    bridgeFactory: (webview) => new Bridge(webview),
+    context,
+  })
 
-	let disposable = vscode.commands.registerCommand('{command-name}', () => {
-		webview.show()
-	})
+  let disposable = vscode.commands.registerCommand('{command-name}', () => {
+    webview.show()
+  })
 
-	context.subscriptions.push(disposable)
+  context.subscriptions.push(disposable)
 }
 ```
 

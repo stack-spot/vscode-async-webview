@@ -5,8 +5,8 @@ import { copyFile } from 'fs/promises'
 
 async function copy(pckg: string) {
   await Promise.all([
-    copyFile('./LICENSE.txt', `./packages/${pckg}/out/LICENSE.txt`),
-    copyFile('./README.md', `./packages/${pckg}/out/README.md`),
+    copyFile('./LICENSE.txt', `./packages/${pckg}/LICENSE.txt`),
+    copyFile('./README.md', `./packages/${pckg}/README.md`),
   ])
 }
 

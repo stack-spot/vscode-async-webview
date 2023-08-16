@@ -154,6 +154,6 @@ export default App
 You can find the full example in our [sample project](https://github.com/Tiagoperes/vscode-async-webview-sample).
 
 # Docs
-- [Getting started](docs/getting-started.md)
-- [Backend library](docs/backend.md)
-- [Client library](docs/client.md)
+- [Getting started](https://github.com/stack-spot/vscode-async-webview/blob/main/docs/getting-started.md)
+- [Backend library](https://github.com/stack-spot/vscode-async-webview/blob/main/docs/backend.md)
+- [Client library](https://github.com/stack-spot/vscode-async-webview/blob/main/docs/client.md)

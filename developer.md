@@ -43,6 +43,21 @@ This project uses [changesets](https://github.com/changesets/changesets). Please
 This is being discussed [here](https://github.com/changesets/changesets/issues/1011). While we can't opt out from this, please, always check
 the version of the package "react" before publishing.
 
+**Attention:** run the script `pre-publish`, on the root directory, before publishing. This will compile the packages and copy important
+files.
+
+### Summary
+```sh
+pnpm changesets
+git add -A
+git commit -m "changesets for {version}"
+pnpm changesets version
+git add -A
+git commit -m "publishing {version}"
+pnpm pre-publish
+pnpm publish -r --access public
+```
+
 # Packages
 - backend: library imported by the extension itself.
 - client: library imported by the web application.

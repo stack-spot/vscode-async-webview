@@ -11,7 +11,8 @@
     "compile:client": "pnpm --filter @stack-spot/vscode-async-webview-client compile",
     "compile:react": "pnpm --filter @stack-spot/vscode-async-webview-react compile",
     "compile": "pnpm compile:shared && pnpm compile:backend && pnpm compile:client && pnpm compile:react",
-    "prepublishOnly": "ts-node scripts/copy-files.ts"
+    "copy-files": "ts-node scripts/copy-files.ts",
+    "pre-publish": "pnpm compile && pnpm copy-files"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",

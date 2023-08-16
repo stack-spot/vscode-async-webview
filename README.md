@@ -46,19 +46,19 @@ import { VSCodeWebview } from '@stack-spot/vscode-async-webview-backend'
 import { Bridge } from './Bridge'
 
 export function activate(context: vscode.ExtensionContext) {
-	const webview = new VSCodeWebview({
-		type: 'myExtension',
-		path: 'packages/webview',
-		title: 'My Extension',
-		bridgeFactory: (webview) => new Bridge(webview),
-		context,
-	})
+  const webview = new VSCodeWebview({
+    type: 'myExtension',
+    path: 'packages/webview',
+    title: 'My Extension',
+    bridgeFactory: (webview) => new Bridge(webview),
+    context,
+  })
 
-	let disposable = vscode.commands.registerCommand('myExtension.start', () => {
-		webview.show()
-	})
+  let disposable = vscode.commands.registerCommand('myExtension.start', () => {
+    webview.show()
+  })
 
-	context.subscriptions.push(disposable)
+  context.subscriptions.push(disposable)
 }
 ```
 

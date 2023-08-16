@@ -14,7 +14,7 @@ respectively.
 - If you don't see anything when the webview is opened inside VSCode, there has probably been an error while loading a script, open the
 developer tools to debug.
 
-It's done! You can now jump to [todo](#todo).
+It's done! You can now jump to the [backend documentation](backend.md) or [client documentation](client.md).
 
 ## From scratch
 1. Use the [recommended approach](https://code.visualstudio.com/api/get-started/your-first-extension) in the VSCode documentation to create
@@ -41,17 +41,17 @@ baseUrl tag). In React, this is normally done by setting the variables `PUBLIC_U
 ## 4. Install the dependencies
 Below, you can you use the dependency manager of your choice instead of pnpm.
 
-### 1. In `packages/extension`, use a terminal window to type:
+#### 4.1. In `packages/extension`, use a terminal window to type:
 ```sh
 pnpm add @stack-spot/vscode-async-webview-backend
 ```
 
-### 2. In `packages/webview`, use a terminal window to type:
+#### 4.2. In `packages/webview`, use a terminal window to type:
 ```sh
 pnpm add @stack-spot/vscode-async-webview-client
 ```
 
-### 3. If your webview uses React, in `packages/webview`, use a terminal window to type:
+#### 4.3. If your webview uses React, in `packages/webview`, use a terminal window to type:
 ```sh
 pnpm add @stack-spot/vscode-async-webview-react
 ```
@@ -60,26 +60,37 @@ pnpm add @stack-spot/vscode-async-webview-react
 To bundle your extension you must compile both the extension and webview projects into a single app that can be distributed. To do this,
 follow the steps below:
 
-  5.1. Make the project "extension" output its compiled files to `./out/packages/extension`.
-  5.2. Make the project "webview" output its compiled files to `./out/packages/webview`.
-  5.3. Create a simple script to copy the files below ([example](https://github.com/Tiagoperes/vscode-async-webview-sample/blob/main/scripts/bundle.ts)):
-      - `./packages/extension/package.json` to `./out/package.json`;
-      - `./LICENSE` to `./out/LICENSE`;
-      - `./README.md` to `./out/README.md`;
-      - `./CHANGELOG.md` to `./out/CHANGELOG.md`.
-      - If you use the example provided, be sure to add `ts-node` as a dependency of the root package.json.
-  5.4. Change the value of the entry `main` in `packages/extension/package.json` from `extension.js` to `packages/extension.js`.
-  5.5. Add scripts to the root package.json. Replace `pnpm` in the json below with the dependency manager of your choice.
-  ```json
-    "scripts": {
-      "compile:extension": "pnpm --filter {project name of extension} {build script}",
-      "compile:webview": "pnpm --filter {project name of extension} {build script}",
-      "compile": "pnpm compile:extension && pnpm compile:webview",
-      "bundle": "ts-node scripts/bundle.ts",
-      "package": "cd out && vsce package && cd ../",
-      "vscode:prepublish": "pnpm compile && pnpm bundle"
-    },
-  ```
+#### 5.1. Output of `packages/extension`
+Make the project "extension" output its compiled files to `./out/packages/extension`. You can do this by changing the webpack config.
+If you didn't startup your extension with webpack, include it now or use another bundler (e.g. rollup).
+
+#### 5.2. Output of `packages/webview`
+Make the project "webview" output its compiled files to `./out/packages/webview`. You'll need to change the bundler config (generally
+webpack).
+
+#### 5.3. Script to copy meta-data files
+Create a simple script to copy the files below ([example](https://github.com/Tiagoperes/vscode-async-webview-sample/blob/main/scripts/bundle.ts)):
+- `./packages/extension/package.json` to `./out/package.json`;
+- `./LICENSE` to `./out/LICENSE`;
+- `./README.md` to `./out/README.md`;
+- `./CHANGELOG.md` to `./out/CHANGELOG.md`.
+- If you use the example provided, be sure to add `ts-node` as a dependency of the root package.json.
+
+#### 5.4. Extension's entrypoint
+Change the value of the entry `main` in `packages/extension/package.json` from `extension.js` to `packages/extension.js`.
+
+#### 5.5. Package.json scripts
+Add scripts to the root package.json. Replace `pnpm` in the json below with the dependency manager of your choice.
+```json
+  "scripts": {
+    "compile:extension": "pnpm --filter {project name of extension} {build script}",
+    "compile:webview": "pnpm --filter {project name of extension} {build script}",
+    "compile": "pnpm compile:extension && pnpm compile:webview",
+    "bundle": "ts-node scripts/bundle.ts",
+    "package": "cd out && vsce package && cd ../",
+    "vscode:prepublish": "pnpm compile && pnpm bundle"
+  },
+```
 
 ## 6. Setup launch.json
 In order to press F5 in VSCode and run your extension, first, replace the contents of `.vscode/launch.json` with the following:
@@ -151,11 +162,11 @@ This is the main file to perform the interaction between the extension and the w
 both applications. Create `Bridge.ts` under `packages/extension/src` with the following content:
 
 ```ts
-import { VSCodeWebviewAPI } from '@stack-spot/vscode-async-webview-backend'
+import { VSCodeWebviewBridge } from '@stack-spot/vscode-async-webview-backend'
 import { ViewState } from './ViewState'
 import { window } from 'vscode'
 
-export class Bridge extends VSCodeWebviewAPI<ViewState> {
+export class Bridge extends VSCodeWebviewBridge<ViewState> {
   // place here any method that should be called by the webview. Methods here can only return serializable values.
   async showMessage(message: string) {
     const action = await window.showInformationMessage(message, 'reset counter', 'close')
@@ -170,7 +181,7 @@ The method above will be called by our webview and show a native VSCode notifica
 that, when clicked, will update the webview. This is a good example because it shows interactions starting from both ends.
 
 ### 7.3 VSCodeWebview
-To start a webview, we must instantiate a `VSCodeWebview`. Edit the file ``packages/extension/src/extension.ts` to do so:
+To start a webview, we must instantiate a `VSCodeWebview`. Edit the file `packages/extension/src/extension.ts` to do so:
 
 ```ts
 import * as vscode from 'vscode'
@@ -182,7 +193,7 @@ export function activate(context: vscode.ExtensionContext) {
 		type: '{name of the view}',
 		path: 'packages/webview',
 		title: '{title of the panel}',
-		apiFactory: (webview) => new Bridge(webview),
+		bridgeFactory: (webview) => new Bridge(webview),
 		context,
 	})
 
@@ -204,26 +215,26 @@ Create the basic setup for this lib in the file `vscode.ts` under `packages/webv
 ```ts
 import { VSCodeWeb, VSCodeWebInterface } from '@stack-spot/vscode-async-webview-client'
 import { createVSCodeHooks } from '@stack-spot/vscode-async-webview-react' // only if you're using React
-// You might want to create a shared package to export the next type if your applications grows too much in complexity
+// You might want to create a shared package to export the next type if your application grows too much in complexity
 import type { Bridge } from '../../extension/src/Bridge' 
 
 export const vscode: VSCodeWebInterface<Bridge> = new VSCodeWeb<Bridge>({})
 const vsHooks = createVSCodeHooks(vscode)  // only if you're using React
-export const useAPIState = vsHooks.useState  // only if you're using React
+export const useBridgeState = vsHooks.useState  // only if you're using React
 ```
 
-If you leave the code like this, it will only work under VSCode, to make it run on a Browser or create unit tests, you must [mock `vscode`
-when a VSCode environment is not detected](todo).
+If you leave the code like this, it will only work under VSCode, to make it run on a Browser or create unit tests, you must
+[mock `vscode` when a VSCode environment is not detected](client.md#browser-compatibility-and-unit-testing).
 
 ### 7.5 Use the shared ViewState and Bridge
 In the webview, we interact with the extension by using the ViewState and calling methods on the Bridge.
 
 To call methods on the bridge, in your views, you must import `vscode` from `./vscode` (the file created in the previous step) and call
-the method by using `vscode.api.{method}`. Every public method available in `Bridge.ts` will be accessible from `vscode.api`. The only
+the method by using `vscode.bridge.{method}`. Every public method available in `Bridge.ts` will be accessible from `vscode.bridge`. The only
 difference is that, if the method originally returns `Type`, when called from the webview, it will return `Promise<Type>`, i.e. it will be
 asynchronous.
 
-To use the ViewState with React, it's as simple as using a hook, just import `useAPIState` from `./vscode`.
+To use the ViewState with React, it's as simple as using a hook, just import `useBridgeState` from `./vscode`.
 
 To use the ViewState without React, you must use:
 - `vscode.getState(name)` to read the state named `name`;
@@ -238,10 +249,10 @@ Here's an example with React:
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
-import { useAPIState, vscode } from './vscode'
+import { useBridgeState, vscode } from './vscode'
 
 function App() {
-  const [count = 0, setCount] = useAPIState('counter')
+  const [count = 0, setCount] = useBridgeState('counter')
 
   return (
     <>
@@ -257,7 +268,7 @@ function App() {
       <div className="card">
         <button onClick={() => {
           setCount(count + 1)
-          vscode.api.showMessage(`The counter is at: ${count + 1}.`)
+          vscode.bridge.showMessage(`The counter is at: ${count + 1}.`)
         }}>
           count is {count}
         </button>

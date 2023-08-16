@@ -3,8 +3,8 @@ The `@stack-spot/vscode-async-webview-backend` is the backend module of this lib
 document will list and explain the main features exported from this package.
 
 # VSCodeWebview
-Represents a Webview loaded into the extension. It creates an API and a State shared between both the extension and the webview. Use the
-code documentation for more details.
+Represents a Webview loaded into the extension. It creates an API (Bridge) and a State shared between both the extension and the webview.
+Use the code documentation for more details.
 
 To show a panel with a webview, first create the `VSCodeWebview` with the required config and then call `VSCodeWebview#show()`.
 

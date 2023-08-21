@@ -14,11 +14,24 @@ import {
 import { AnyFunction } from './types'
 
 interface Dependencies {
+  /**
+   * Function to send a message to the client app.
+   */
   sendMessageToClient: (message: WebviewMessage) => void,
-  listenToMessagesFromClient: (listener: (message: WebviewMessage) => void) => void,
+  /**
+   * In order to handle the message received from the client, you need to attach the listener passed as parameter to this function to the
+   * event of receiving a message.
+   */
+  listenToMessagesFromClient: (listener: (message: WebviewMessage) => Promise<void>) => void,
+  /**
+   * A function that, given the method name, returns the corresponding method on the bridge.
+   */
   getBridgeHandler: (name: string) => AnyFunction | undefined,
 }
 
+/**
+ * Send/receive messages to/from the client.
+ */
 export class MessageHandler {
   private readonly deps: Dependencies
   private readonly getStateCalls: Map<string, ManualPromise> = new Map()
@@ -48,7 +61,6 @@ export class MessageHandler {
         ? `Error while sending message to client. Please make sure the return value of the method "${property}" in the Bridge provided to the VSCodeWebview is serializable.`
         : `Error while running method "${property}". Cause: ${errorToString(error)}.`
       this.deps.sendMessageToClient(buildBridgeError(id, message))
-      throw error
     }
   }
 
@@ -73,7 +85,7 @@ export class MessageHandler {
     this.deps.listenToMessagesFromClient(async (message) => {
       switch (message?.type) {
         case messageType.bridge:
-          this.handleRequestToBridge(message)
+          await this.handleRequestToBridge(message)
           break
         case messageType.getState:
           this.handleStateResponse('get', message)
@@ -88,8 +100,8 @@ export class MessageHandler {
     this.getStateCalls.forEach((value, key) => {
       value.reject(`The webview closed before the state "${String(key)}" could be retrieved.`)
     })
-    this.setStateCalls.forEach((value, key) => {
-      value.reject(`The webview closed before the state "${key}" could be set.`)
+    this.setStateCalls.forEach((value) => {
+      value.reject('The webview closed before the state could be set.')
     })
     this.getStateCalls.clear()
     this.setStateCalls.clear()
@@ -118,10 +130,11 @@ export class MessageHandler {
       this.setStateCalls.set(message.id, manualPromise)
       logger.debug('sending set state message to client:', message)
       this.deps.sendMessageToClient(message)
-      return manualPromise.promise
     } catch (error) {
-      manualPromise.reject(`Can't set state with name "${state}". Please, make sure the value passed as parameter is serializable.`)
-      throw error
+      manualPromise.reject(
+        `Can't set state with name "${state}". Please, make sure the value passed as parameter is serializable. Cause: ${error}.`,
+      )
     }
+    return manualPromise.promise
   }
 }

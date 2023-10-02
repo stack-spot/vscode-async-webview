@@ -59,7 +59,7 @@ export class MessageHandler {
     } catch (error: any) {
       const message = functionHasExecuted
         ? `Error while sending message to client. Please make sure the return value of the method "${property}" in the Bridge provided to the VSCodeWebview is serializable.`
-        : `Error while running method "${property}". Cause: ${errorToString(error)}.`
+        : errorToString(error)
       this.deps.sendMessageToClient(buildBridgeError(id, message))
     }
   }

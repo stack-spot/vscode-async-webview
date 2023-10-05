@@ -15,9 +15,10 @@ import { AnyFunction } from './types'
 
 interface Dependencies {
   /**
-   * Function to send a message to the client app.
+   * Function to send a message to the client app. It must return a promise that resolves to true if the message was successfully sent or
+   * false otherwise.
    */
-  sendMessageToClient: (message: WebviewMessage) => void,
+  sendMessageToClient: (message: WebviewMessage) => Promise<boolean>,
   /**
    * In order to handle the message received from the client, you need to attach the listener passed as parameter to this function to the
    * event of receiving a message.
@@ -36,10 +37,20 @@ export class MessageHandler {
   private readonly deps: Dependencies
   private readonly getStateCalls: Map<string, ManualPromise> = new Map()
   private readonly setStateCalls: Map<string, ManualPromise<void>> = new Map()
+  /**
+   * If the client is offline (sendMessage returns false), the message is enqueued instead.
+   * The queue is consumed as soon as the client becomes online again.
+   */
+  private queue: WebviewMessage[] = []
   
   constructor(deps: Dependencies) {
     this.deps = deps
     this.listen()
+  }
+
+  private async sendMessageToClient(message: WebviewMessage) {
+    const sent = await this.deps.sendMessageToClient(message)
+    if (!sent) this.queue.push(message)
   }
 
   private async handleRequestToBridge(message: WebviewRequestMessage) {
@@ -48,19 +59,19 @@ export class MessageHandler {
     const fn = this.deps.getBridgeHandler(property)
     if (!fn) {
       const error = `"${property}" is not a method or function of the bridge provided to the VSCodeWebview.`
-      this.deps.sendMessageToClient(buildBridgeError(id, error))
+      this.sendMessageToClient(buildBridgeError(id, error))
     }
     let functionHasExecuted = false
     try {
       const result = await fn!(...args)
       functionHasExecuted = true
       logger.debug('sending bridge response to client:', result)
-      this.deps.sendMessageToClient(buildBridgeResponse(id, result))
+      this.sendMessageToClient(buildBridgeResponse(id, result))
     } catch (error: any) {
       const message = functionHasExecuted
         ? `Error while sending message to client. Please make sure the return value of the method "${property}" in the Bridge provided to the VSCodeWebview is serializable.`
         : errorToString(error)
-      this.deps.sendMessageToClient(buildBridgeError(id, message))
+      this.sendMessageToClient(buildBridgeError(id, message))
     }
   }
 
@@ -81,6 +92,12 @@ export class MessageHandler {
     map.delete(message.id)
   }
 
+  private handleClientReadyness() {
+    const q = this.queue
+    this.queue = []
+    q.forEach(m => this.sendMessageToClient(m))
+  }
+
   private listen() {
     this.deps.listenToMessagesFromClient(async (message) => {
       switch (message?.type) {
@@ -92,6 +109,9 @@ export class MessageHandler {
           break
         case messageType.setState:
           this.handleStateResponse('set', message)
+          break
+        case messageType.ready:
+          this.handleClientReadyness()
       }
     })
   }
@@ -116,7 +136,7 @@ export class MessageHandler {
       manualPromise = new ManualPromise()
       this.getStateCalls.set(message.id, manualPromise)
       logger.debug('sending get state message to client:', message)
-      this.deps.sendMessageToClient(message)
+      this.sendMessageToClient(message)
     }
     return manualPromise.promise
   }
@@ -129,7 +149,7 @@ export class MessageHandler {
       const message = buildSetStateRequest(state, value)
       this.setStateCalls.set(message.id, manualPromise)
       logger.debug('sending set state message to client:', message)
-      this.deps.sendMessageToClient(message)
+      this.sendMessageToClient(message)
     } catch (error) {
       manualPromise.reject(
         `Can't set state with name "${state}". Please, make sure the value passed as parameter is serializable. Cause: ${error}.`,

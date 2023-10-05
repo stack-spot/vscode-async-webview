@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 
 import { Dispatch, SetStateAction, useEffect, useState } from 'react'
-import { StateTypeOf, VSCodeWebInterface } from '@stack-spot/vscode-async-webview-client'
+import { AsyncStateful, StateTypeOf, VSCodeWebInterface } from '@stack-spot/vscode-async-webview-client'
 
 interface VSCodeHooks<T extends VSCodeWebInterface> {
   useState: <
@@ -10,7 +10,7 @@ interface VSCodeHooks<T extends VSCodeWebInterface> {
   >(key: Key) => [State[Key], Dispatch<SetStateAction<State[Key]>>],
 }
 
-export function createVSCodeHooks<T extends VSCodeWebInterface>(vscode: T): VSCodeHooks<T> {
+export function createVSCodeHooks<T extends VSCodeWebInterface<AsyncStateful<any>>>(vscode: T): VSCodeHooks<T> {
   return {
     useState: (key) => {
       const [value, setValue] = useState(vscode.getState(key))

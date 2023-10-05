@@ -1,6 +1,6 @@
 {
   "name": "@stack-spot/vscode-async-webview-backend",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "repository": "github:stack-spot/vscode-async-webview",
   "main": "out/index.js",
   "module": "out/index.mjs",
@@ -10,7 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@stack-spot/vscode-async-webview-shared": "^0.4.0",
+    "@stack-spot/vscode-async-webview-shared": "^0.6.0",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
@@ -24,6 +24,6 @@
     "rollup-plugin-dts": "^5.3.0",
     "rollup-plugin-esbuild": "^5.0.0",
     "ts-jest": "^29.1.1",
-    "typescript": "^4.9.4"
+    "typescript": "4.9.4"
   }
 }

@@ -4,6 +4,7 @@ export const messageType = {
   bridge: 'vscode-webview:bridge',
   getState: 'vscode-webview:get-state',
   setState: 'vscode-webview:set-state',
+  ready: 'vscode-webview-ready',
 } as const
 
 export type MessageType = (typeof messageType)[keyof typeof messageType]
@@ -78,3 +79,6 @@ export function buildSetStateResponse(id: string): WebviewResponseMessage {
 export function buildSetStateError(id: string, error: string): WebviewResponseMessage {
   return { type: messageType.setState, id, error }
 }
+
+/* Ready message */
+export const readyMessage: WebviewMessage = { type: 'vscode-webview-ready', id: 'vscode-webview-ready' }

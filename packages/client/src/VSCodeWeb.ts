@@ -12,6 +12,7 @@ import {
   StateTypeOf,
   logger,
   buildGetStateError,
+  readyMessage,
 } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
@@ -46,6 +47,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful<any> = AsyncStateful<Record<
     if (!stored) VSCodeWeb.vscode.setState(initialState)
     this.state = VSCodeWeb.vscode.getState()
     this.addWindowListener()
+    VSCodeWeb.sendMessageToExtension(readyMessage)
   }
 
   /**

@@ -7,7 +7,7 @@ import { VSCodeWebviewBridge } from './VSCodeWebviewBridge'
  * Same as {@link VSCodeWebview}, but instead of creating a new Panel, it implements the interface {@link WebviewViewProvider} instead.
  */
 export class VSCodeViewProvider<
-  Bridge extends VSCodeWebviewBridge<any> = VSCodeWebviewBridge<any>
+  Bridge extends VSCodeWebviewBridge = VSCodeWebviewBridge
 > extends VSCodeWebview<Bridge> implements WebviewViewProvider {
   private view: WebviewView | undefined
 

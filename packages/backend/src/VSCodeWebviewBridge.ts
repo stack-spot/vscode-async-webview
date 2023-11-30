@@ -1,5 +1,5 @@
 import { Webview } from 'vscode'
-import { AsyncState, AsyncStateful, asWebViewMessage, logger } from '@stack-spot/vscode-async-webview-shared'
+import { AsyncState, AsyncStateful, WebviewStreamMessage, asWebViewMessage, logger } from '@stack-spot/vscode-async-webview-shared'
 import { MessageHandler } from './MessageHandler'
 import { AnyFunction } from './types'
 
@@ -24,7 +24,7 @@ import { AnyFunction } from './types'
  * If you need to do additional tasks before disposing the bridge, you can overwrite the method `dispose`, just don't forget to call
  * `super.dispose()`.
  */
-export abstract class VSCodeWebviewBridge<StateType extends object = Record<string, never>> implements AsyncStateful<StateType> {
+export abstract class VSCodeWebviewBridge<StateType extends Record<string, any> = Record<string, any>> implements AsyncStateful<StateType> {
   #messageHandler: MessageHandler
   readonly state
 
@@ -51,6 +51,10 @@ export abstract class VSCodeWebviewBridge<StateType extends object = Record<stri
         })
       },
     })
+  }
+
+  stream(message: Omit<WebviewStreamMessage, 'type' | 'index'>) {
+    this.#messageHandler.stream({ ...message, type: 'vscode-webview-stream' })
   }
 
   dispose() {

@@ -1,13 +1,15 @@
-import { AsyncStateful, StateTypeOf } from '@stack-spot/vscode-async-webview-shared'
+import { AsyncStateful, StateTypeOf, WebviewStreamMessage } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
-export type BridgeMock<T extends AsyncStateful<any>> = Partial<LinkedBridge<T>>
+export type BridgeMock<T extends AsyncStateful> = Partial<LinkedBridge<T>>
 
-export class VSCodeWebMock<Bridge extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<Bridge> {
+export class VSCodeWebMock<Bridge extends AsyncStateful = AsyncStateful> implements VSCodeWebInterface<Bridge> {
   readonly bridge: LinkedBridge<Bridge>
   private state: StateTypeOf<Bridge>
   private readonly mockedBridge: BridgeMock<Bridge>
   private listeners: Partial<{ [K in keyof StateTypeOf<Bridge>]: ((value: StateTypeOf<Bridge>[K]) => void)[] }> = {}
+  private streams = new Map<string, { onData: (data: string) => void, onError?: (error: string) => void, onComplete?: () => void }>()
+  private pendingStreamingMessages = new Map<string, Omit<WebviewStreamMessage, 'index' | 'type'>[]>
 
   constructor(initialState: StateTypeOf<Bridge>, bridge: BridgeMock<Bridge>) {
     this.state = initialState
@@ -58,5 +60,26 @@ export class VSCodeWebMock<Bridge extends AsyncStateful<any> = AsyncStateful<Rec
       const index = this.listeners[key]?.indexOf(listener)
       if (index !== undefined && index >= 0) this.listeners[key]?.splice(index, 1)
     }
+  }
+
+  stream(id: string, onData: (data: string) => void, onError?: (error: string) => void, onComplete?: () => void): void {
+    this.streams.set(id, { onData, onError, onComplete })
+    const queue = this.pendingStreamingMessages.get(id)
+    queue?.forEach(m => this.sendStream(m))
+    this.pendingStreamingMessages.delete(id)
+  }
+
+  sendStream(message: Omit<WebviewStreamMessage, 'index' | 'type'>) {
+    const stream = this.streams.get(message.id)
+    if (!stream) {
+      if (!this.pendingStreamingMessages.has(message.id)) this.pendingStreamingMessages.set(message.id, [])
+      const queue = this.pendingStreamingMessages.get(message.id)
+      queue?.push(message)
+      return
+    }
+    if (message.content) stream.onData(message.content)
+    if (message.error || message.complete) this.streams.delete(message.id)
+    if (message.error && stream.onError) stream.onError(message.error)
+    if (message.complete && stream.onComplete) stream.onComplete()
   }
 }

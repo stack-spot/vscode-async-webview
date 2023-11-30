@@ -3,7 +3,7 @@ import { VSCodeWebviewBridge } from './VSCodeWebviewBridge'
 
 export type AnyFunction = (...args: any[]) => any
 
-export interface ViewOptions<Bridge extends VSCodeWebviewBridge<any>> {
+export interface ViewOptions<Bridge extends VSCodeWebviewBridge> {
   /**
    * The path to the webview directory.
    * Attention:

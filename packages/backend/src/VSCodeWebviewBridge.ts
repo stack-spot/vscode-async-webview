@@ -53,6 +53,10 @@ export abstract class VSCodeWebviewBridge<StateType extends Record<string, any> 
     })
   }
 
+  /**
+   * Streams a string from the extension to the webview.
+   * @param message the package to send.
+   */
   stream(message: Omit<WebviewStreamMessage, 'type' | 'index'>) {
     this.#messageHandler.stream({ ...message, type: 'vscode-webview-stream' })
   }

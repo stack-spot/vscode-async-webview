@@ -8,10 +8,10 @@ export type LinkedBridge<T> = Omit<{
     T[K] extends (...args: infer Args) => infer Return
       ? (...args: Args) => Promise<Unpromisify<Return>>
       : never
-}, 'dispose'>
+}, 'dispose' | 'stream'>
 
 export interface VSCodeWebInterface<
-  Bridge extends AsyncStateful<any> = AsyncStateful<any>,
+  Bridge extends AsyncStateful = AsyncStateful,
   State = StateTypeOf<Bridge>,
 > {
   /**
@@ -46,4 +46,13 @@ export interface VSCodeWebInterface<
    * @returns a function to unsubscribe the listener.
    */
   subscribe<Key extends keyof State>(key: Key, listener: (value: State[Key]) => void): () => void,
+  /**
+   * Streams a string from the extension to the client web app.
+   * 
+   * @param id the id of the streaming object.
+   * @param onData a function that is called whenever there's new data in the streaming channel.
+   * @param onError a function to be called if an error happens while streaming.
+   * @param onComplete a function to be called if the streaming completes successfully.
+   */
+  stream(id: string, onData: (data: string) => void, onError?: (error: string) => void, onComplete?: () => void): void,
 }

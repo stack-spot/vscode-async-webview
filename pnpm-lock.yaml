@@ -32,7 +32,7 @@ importers:
   packages/backend:
     dependencies:
       '@stack-spot/vscode-async-webview-shared':
-        specifier: ^0.6.0
+        specifier: ^0.7.0
         version: link:../shared
       lodash:
         specifier: ^4.17.21
@@ -75,7 +75,7 @@ importers:
   packages/client:
     dependencies:
       '@stack-spot/vscode-async-webview-shared':
-        specifier: ^0.6.0
+        specifier: ^0.7.0
         version: link:../shared
     devDependencies:
       esbuild:
@@ -97,7 +97,7 @@ importers:
   packages/react:
     dependencies:
       '@stack-spot/vscode-async-webview-client':
-        specifier: '>=0.6.0'
+        specifier: '>=0.7.0'
         version: link:../client
       react:
         specifier: ^18.2.0

@@ -12,7 +12,7 @@ interface ViewColumnWithFocus {
 type ShowOptions = ViewColumn | ViewColumnWithFocus
 type PanelOptions = WebviewPanelOptions & WebviewOptions
 
-interface Options<Bridge extends VSCodeWebviewBridge<any>> extends ViewOptions<Bridge> {
+interface Options<Bridge extends VSCodeWebviewBridge> extends ViewOptions<Bridge> {
   /**
    * Which ViewColumn would you like to use?
    */
@@ -35,7 +35,7 @@ interface Options<Bridge extends VSCodeWebviewBridge<any>> extends ViewOptions<B
  * 
  * To show a panel with a webview, first create the `VSCodeWebview` with the required config and then call `VSCodeWebview#show()`.
  */
-export class VSCodeWebview<Bridge extends VSCodeWebviewBridge<any> = VSCodeWebviewBridge<any>> {
+export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBridge> {
   protected readonly baseUri: Uri
   private readonly title: string
   readonly type: string

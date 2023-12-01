@@ -13,8 +13,21 @@ import {
   logger,
   buildGetStateError,
   readyMessage,
+  WebviewStreamMessage,
 } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
+
+interface StreamingHandler {
+  onData: (data: string) => void,
+  onError?: (error: string) => void,
+  onComplete?: () => void,
+}
+
+interface StreamingObject {
+  handler?: StreamingHandler,
+  index: number,
+  queue: Map<number, WebviewStreamMessage>,
+}
 
 /**
  * This class is responsible for acquiring the vscode API and connecting the webview to the bridge. This should never be instantiated more
@@ -25,11 +38,12 @@ import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
  * 
  * This class can be mocked with `VSCodeWebMock`.
  */
-export class VSCodeWeb<Bridge extends AsyncStateful<any> = AsyncStateful<Record<string, never>>> implements VSCodeWebInterface<Bridge> {
+export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements VSCodeWebInterface<Bridge> {
   private state: StateTypeOf<Bridge>
   private listeners: Partial<{ [K in keyof StateTypeOf<Bridge>]: ((value: StateTypeOf<Bridge>[K]) => void)[] }> = {}
   private bridgeCalls: Map<string, ManualPromise> = new Map()
   readonly bridge = this.createBridgeProxy() as LinkedBridge<Bridge>
+  private streams = new Map<string, StreamingObject>()
   /**
    * Original vscode object obtained by calling `acquireVsCodeApi()`.
    * Will be available after the first time the class is instantiated.
@@ -92,6 +106,26 @@ export class VSCodeWeb<Bridge extends AsyncStateful<any> = AsyncStateful<Record<
     VSCodeWeb.sendMessageToExtension(buildSetStateResponse(message.id))
   }
 
+  private processStreamQueue(stream: StreamingObject) {
+    const message = stream.queue.get(stream.index)
+    stream.queue.delete(stream.index)
+    if (!message) return
+    if (message.content) stream.handler?.onData(message.content)
+    if (message.error || message.complete) this.streams.delete(message.id)
+    if (message.error && stream.handler?.onError) stream.handler.onError(message.error)
+    if (message.complete && stream.handler?.onComplete) stream.handler.onComplete()
+    stream.index++
+    this.processStreamQueue(stream)
+  }
+
+  private handleStream(message: WebviewStreamMessage) {
+    logger.debug('handling stream message:', message)
+    if (!this.streams.has(message.id)) this.streams.set(message.id, { index: 0, queue: new Map() })
+    const stream = this.streams.get(message.id)!
+    stream.queue.set(message.index, message)
+    if (stream.handler) this.processStreamQueue(stream)
+  }
+
   private addWindowListener() {
     window.addEventListener('message', ({ data }) => {
       const message = asWebViewMessage(data)
@@ -104,6 +138,9 @@ export class VSCodeWeb<Bridge extends AsyncStateful<any> = AsyncStateful<Record<
           break
         case messageType.setState:
           this.handleSetStateRequest(message)
+          break
+        case messageType.stream:
+          this.handleStream(message as WebviewStreamMessage)
       }
     })
   }
@@ -160,5 +197,12 @@ export class VSCodeWeb<Bridge extends AsyncStateful<any> = AsyncStateful<Record<
       const index = this.listeners[key]?.indexOf(listener)
       if (index !== undefined && index >= 0) this.listeners[key]?.splice(index, 1)
     }
+  }
+
+  stream(id: string, onData: (data: string) => void, onError?: (error: string) => void, onComplete?: () => void): void {
+    if (!this.streams.has(id)) this.streams.set(id, { index: 0, queue: new Map() })
+    const stream = this.streams.get(id)!
+    stream.handler = { onData, onError, onComplete }
+    if (stream.queue.size) this.processStreamQueue(stream)
   }
 }

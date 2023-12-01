@@ -10,6 +10,7 @@ import {
   WebviewMessage,
   logger,
   errorToString,
+  WebviewStreamMessage,
 } from '@stack-spot/vscode-async-webview-shared'
 import { AnyFunction } from './types'
 
@@ -42,6 +43,7 @@ export class MessageHandler {
    * The queue is consumed as soon as the client becomes online again.
    */
   private queue: WebviewMessage[] = []
+  private streamingIndexes = new Map<string, number>()
   
   constructor(deps: Dependencies) {
     this.deps = deps
@@ -156,5 +158,14 @@ export class MessageHandler {
       )
     }
     return manualPromise.promise
+  }
+
+  stream(message: Omit<WebviewStreamMessage, 'index'>) {
+    const previousIndex = this.streamingIndexes.get(message.id) ?? -1
+    const index = previousIndex + 1
+    this.streamingIndexes.set(message.id, index)
+    const withIndex: WebviewStreamMessage = { ...message, index }
+    this.sendMessageToClient(withIndex)
+    if (message.complete || message.error) this.streamingIndexes.delete(message.id)
   }
 }

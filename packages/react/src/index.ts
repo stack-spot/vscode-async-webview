@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 
-import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState, useRef } from 'react'
 import { AsyncStateful, StateTypeOf, VSCodeWebInterface } from '@stack-spot/vscode-async-webview-client'
 
 interface StreamingProps {
@@ -9,15 +9,15 @@ interface StreamingProps {
   /**
    * runs when streaming completes with an error.
    */
-  onError?: (error: string) => void,
+  onError?: (error: string, partialResult: string) => void,
   /**
    * runs when streaming completes successfuly.
    */
-  onSuccess?: () => void,
+  onSuccess?: (result: string) => void,
   /**
    * runs when streaming completes.
    */
-  onFinish?: () => void,
+  onFinish?: (result: string) => void,
 }
 
 interface VSCodeHooks<T extends VSCodeWebInterface> {
@@ -42,20 +42,27 @@ export function createVSCodeHooks<T extends VSCodeWebInterface<AsyncStateful>>(v
       ]
     },
     useStream: ({ id, initialValue = '', onError, onSuccess, onFinish }: StreamingProps) => {
-      const [value, setValue] = useState(initialValue)
+      const [, update] = useState(0)
+      const value = useRef(initialValue)
       useEffect(() => {
         if (!id) return
         vscode.stream(
           id,
-          data => setValue(current => `${current}${data}`),
-          error => {
-            if (onError) onError(error)
-            if (onFinish) onFinish()
+          data => {
+            value.current += data
+            update(c => c + 1)
           },
-          onFinish,
+          error => {
+            if (onError) onError(error, value.current)
+            if (onFinish) onFinish(value.current)
+          },
+          () => {
+            if (onSuccess) onSuccess(value.current)
+            if (onFinish) onFinish(value.current)
+          },
         )
       }, [])
-      return value
+      return value.current
     },
   }
 }

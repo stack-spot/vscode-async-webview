@@ -58,7 +58,7 @@ export abstract class VSCodeWebviewBridge<StateType extends Record<string, any> 
    * @param message the package to send.
    */
   stream(message: Omit<WebviewStreamMessage, 'type' | 'index'>) {
-    this.#messageHandler.stream({ ...message, type: 'vscode-webview-stream' })
+    this.#messageHandler.stream(message)
   }
 
   dispose() {

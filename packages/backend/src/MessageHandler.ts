@@ -43,16 +43,19 @@ export class MessageHandler {
    * The queue is consumed as soon as the client becomes online again.
    */
   private queue: WebviewMessage[] = []
-  private streamingIndexes = new Map<string, number>()
+  private streaming = new Map<string, { index: number, pending?: Omit<WebviewStreamMessage, 'index' | 'type'>, result: string }>()
   
   constructor(deps: Dependencies) {
     this.deps = deps
     this.listen()
   }
 
-  private async sendMessageToClient(message: WebviewMessage) {
+  private async sendMessageToClient(message: WebviewMessage, onNotSent?: () => void) {
     const sent = await this.deps.sendMessageToClient(message)
-    if (!sent) this.queue.push(message)
+    if (!sent) {
+      if (onNotSent) onNotSent()
+      else this.queue.push(message)
+    }
   }
 
   private async handleRequestToBridge(message: WebviewRequestMessage) {
@@ -98,6 +101,13 @@ export class MessageHandler {
     const q = this.queue
     this.queue = []
     q.forEach(m => this.sendMessageToClient(m))
+    this.streaming.forEach((value) => {
+      const message = value.pending
+      const content = value.result
+      value.pending = undefined
+      value.result = ''
+      if (message) this.stream({ ...message, content })
+    })
   }
 
   private listen() {
@@ -160,12 +170,17 @@ export class MessageHandler {
     return manualPromise.promise
   }
 
-  stream(message: Omit<WebviewStreamMessage, 'index'>) {
-    const previousIndex = this.streamingIndexes.get(message.id) ?? -1
-    const index = previousIndex + 1
-    this.streamingIndexes.set(message.id, index)
-    const withIndex: WebviewStreamMessage = { ...message, index }
-    this.sendMessageToClient(withIndex)
-    if (message.complete || message.error) this.streamingIndexes.delete(message.id)
+  stream(message: Omit<WebviewStreamMessage, 'index' | 'type'>) {
+    const currentStreaming = this.streaming.get(message.id) ?? { index: -1, result: '' }
+    this.streaming.set(message.id, currentStreaming)
+    currentStreaming.result += message.content
+    if (currentStreaming.pending) return currentStreaming.pending = message
+    currentStreaming.index++
+    const withIndex: WebviewStreamMessage = { ...message, index: currentStreaming.index, type: 'vscode-webview-stream' }
+    this.sendMessageToClient(withIndex, () => {
+      currentStreaming.index = -1
+      currentStreaming.pending = message
+    })
+    if (message.complete || message.error) this.streaming.delete(message.id)
   }
 }

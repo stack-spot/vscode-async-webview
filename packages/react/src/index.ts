@@ -49,7 +49,7 @@ export function createVSCodeHooks<T extends VSCodeWebInterface<AsyncStateful>>(v
         vscode.stream(
           id,
           data => {
-            value.current += data
+            value.current = data
             update(c => c + 1)
           },
           error => {

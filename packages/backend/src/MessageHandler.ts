@@ -179,7 +179,7 @@ export class MessageHandler {
     const withIndex: WebviewStreamMessage = { ...message, index: currentStreaming.index, type: 'vscode-webview-stream' }
     this.sendMessageToClient(withIndex, () => {
       currentStreaming.index = -1
-      currentStreaming.pending = message
+      currentStreaming.pending ??= message
     })
     if (message.complete || message.error) this.streaming.delete(message.id)
   }

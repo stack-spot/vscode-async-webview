@@ -50,7 +50,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
    */
   static vscode: any
 
-  constructor(initialState: StateTypeOf<Bridge>) {
+  constructor(initialState: StateTypeOf<Bridge>, sendReadyMessage = true) {
     if (VSCodeWeb.vscode) {
       logger.warn('VSCodeWeb should not be instantiated more than once, this can cause unexpected behavior.')
     } else {
@@ -61,7 +61,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     if (!stored) VSCodeWeb.vscode.setState(initialState)
     this.state = VSCodeWeb.vscode.getState()
     this.addWindowListener()
-    VSCodeWeb.sendMessageToExtension(readyMessage)
+    if (sendReadyMessage) this.setViewReady()
   }
 
   /**
@@ -172,6 +172,10 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
 
   private runListeners<Key extends keyof StateTypeOf<Bridge>>(stateKey: Key, value: StateTypeOf<Bridge>[Key]) {
     this.listeners[stateKey]?.forEach(l => l(value))
+  }
+
+  setViewReady() {
+    VSCodeWeb.sendMessageToExtension(readyMessage)
   }
 
   getState<Key extends keyof StateTypeOf<Bridge>>(key: Key): StateTypeOf<Bridge>[Key] {

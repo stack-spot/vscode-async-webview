@@ -55,4 +55,8 @@ export interface VSCodeWebInterface<
    * @param onComplete a function to be called if the streaming completes successfully.
    */
   stream(id: string, onData: (data: string) => void, onError?: (error: string) => void, onComplete?: () => void): void,
+  /**
+   * Client communicate that DOM are mounted
+   */
+  setViewReady?: () => void,
 }

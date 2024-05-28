@@ -1,6 +1,6 @@
 {
   "name": "@stack-spot/vscode-async-webview-client",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "repository": "github:stack-spot/vscode-async-webview",
   "main": "out/index.js",
   "module": "out/index.mjs",
@@ -9,7 +9,7 @@
     "compile": "rollup -c"
   },
   "dependencies": {
-    "@stack-spot/vscode-async-webview-shared": "^0.7.0"
+    "@stack-spot/vscode-async-webview-shared": "^0.7.1"
   },
   "devDependencies": {
     "typescript": "4.9.4",

@@ -14,10 +14,11 @@
   "typescript.format.semicolons": "remove",
   "typescript.preferences.importModuleSpecifier": "project-relative",
   "cSpell.words": [
-    "stackspot",
     "codebuddy",
     "firefox",
-    "unpromisify",
     "keycloak",
+    "Readyness",
+    "stackspot",
+    "unpromisify"
   ],
 }

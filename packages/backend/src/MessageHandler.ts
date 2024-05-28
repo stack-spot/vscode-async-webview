@@ -1,3 +1,4 @@
+import { uniqueId } from 'lodash'
 import { 
   messageType,
   WebviewRequestMessage,
@@ -11,6 +12,7 @@ import {
   logger,
   errorToString,
   WebviewStreamMessage,
+  WebviewTelemetryMessage,
 } from '@stack-spot/vscode-async-webview-shared'
 import { AnyFunction } from './types'
 
@@ -182,5 +184,13 @@ export class MessageHandler {
       currentStreaming.pending ??= message
     })
     if (message.complete || message.error) this.streaming.delete(message.id)
+  }
+
+  telemetryEvent(message: Omit<WebviewTelemetryMessage, 'type' | 'id'>) {
+    this.sendMessageToClient({
+      id: uniqueId(),
+      type: 'vscode-webview-telemetry',
+      ...message,
+    })
   }
 }

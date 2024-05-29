@@ -2,7 +2,6 @@
 
 import { Dispatch, SetStateAction, useEffect, useState, useRef } from 'react'
 import { AsyncStateful, StateTypeOf, VSCodeWebInterface } from '@stack-spot/vscode-async-webview-client'
-
 interface StreamingProps {
   id: string,
   initialValue?: string,
@@ -48,11 +47,11 @@ export function createVSCodeHooks<T extends VSCodeWebInterface<AsyncStateful>>(v
         if (!id) return
         vscode.stream(
           id,
-          data => {
+          (data: any) => {
             value.current += data
             update(c => c + 1)
           },
-          error => {
+          (error: any) => {
             if (onError) onError(error, value.current)
             if (onFinish) onFinish(value.current)
           },

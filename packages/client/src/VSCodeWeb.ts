@@ -14,6 +14,7 @@ import {
   buildGetStateError,
   readyMessage,
   WebviewStreamMessage,
+  WebviewTelemetryMessage,
 } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
@@ -29,6 +30,8 @@ interface StreamingObject {
   queue: Map<number, WebviewStreamMessage>,
 }
 
+type TelemetryEvent = (eventName: string, eventType: 'event' | 'error', properties?: object) => void
+
 /**
  * This class is responsible for acquiring the vscode API and connecting the webview to the bridge. This should never be instantiated more
  * than once.
@@ -39,7 +42,7 @@ interface StreamingObject {
  * This class can be mocked with `VSCodeWebMock`.
  */
 export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements VSCodeWebInterface<Bridge> {
-  private state: StateTypeOf<Bridge>
+  private state: StateTypeOf<Bridge>  
   private listeners: Partial<{ [K in keyof StateTypeOf<Bridge>]: ((value: StateTypeOf<Bridge>[K]) => void)[] }> = {}
   private bridgeCalls: Map<string, ManualPromise> = new Map()
   readonly bridge = this.createBridgeProxy() as LinkedBridge<Bridge>
@@ -49,8 +52,9 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
    * Will be available after the first time the class is instantiated.
    */
   static vscode: any
+  private telemetryEvent: TelemetryEvent
 
-  constructor(initialState: StateTypeOf<Bridge>, sendReadyMessage = true) {
+  constructor(initialState: StateTypeOf<Bridge>, telemetryEvent: TelemetryEvent, sendReadyMessage = true) {
     if (VSCodeWeb.vscode) {
       logger.warn('VSCodeWeb should not be instantiated more than once, this can cause unexpected behavior.')
     } else {
@@ -62,6 +66,8 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     this.state = VSCodeWeb.vscode.getState()
     this.addWindowListener()
     if (sendReadyMessage) this.setViewReady()
+
+    this.telemetryEvent = telemetryEvent
   }
 
   /**
@@ -126,6 +132,10 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     if (stream.handler) this.processStreamQueue(stream)
   }
 
+  private handleTelemetry({ eventName, eventType, properties }: WebviewTelemetryMessage) {
+    this.telemetryEvent(eventName, eventType, properties)
+  }
+
   private addWindowListener() {
     window.addEventListener('message', ({ data }) => {
       const message = asWebViewMessage(data)
@@ -139,8 +149,11 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
         case messageType.setState:
           this.handleSetStateRequest(message)
           break
+        case messageType.telemetry:
+          this.handleTelemetry(message as WebviewTelemetryMessage)
+          break
         case messageType.stream:
-          this.handleStream(message as WebviewStreamMessage)
+          this.handleStream(message as WebviewStreamMessage)        
       }
     })
   }

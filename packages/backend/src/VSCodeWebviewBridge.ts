@@ -1,5 +1,12 @@
 import { Webview } from 'vscode'
-import { AsyncState, AsyncStateful, WebviewStreamMessage, asWebViewMessage, logger } from '@stack-spot/vscode-async-webview-shared'
+import { 
+  AsyncState, 
+  AsyncStateful, 
+  WebviewStreamMessage, 
+  asWebViewMessage, 
+  logger, 
+  WebviewTelemetryMessage,
+} from '@stack-spot/vscode-async-webview-shared'
 import { MessageHandler } from './MessageHandler'
 import { AnyFunction } from './types'
 
@@ -31,8 +38,8 @@ export abstract class VSCodeWebviewBridge<StateType extends Record<string, any> 
   constructor(webview: Webview) {
     this.#messageHandler = this.#createMessageHandler(webview)
     this.state = {
-      get: (key) => this.#messageHandler.getState.apply(this.#messageHandler, [String(key)]),
-      set: (key, value) => this.#messageHandler.setState.apply(this.#messageHandler, [String(key), value]),
+      get: (key: string) => this.#messageHandler.getState.apply(this.#messageHandler, [String(key)]),
+      set: (key: string, value: any) => this.#messageHandler.setState.apply(this.#messageHandler, [String(key), value]),
     } as AsyncState<StateType>
   }
 
@@ -59,6 +66,14 @@ export abstract class VSCodeWebviewBridge<StateType extends Record<string, any> 
    */
   stream(message: Omit<WebviewStreamMessage, 'type' | 'index'>) {
     this.#messageHandler.stream(message)
+  }
+
+  /**
+   * Sends extension telemetry events to be registered by the webview
+   * @param message the package to send.
+   */
+  telemetryEvent(message: Omit<WebviewTelemetryMessage, 'type' | 'id'>) {
+    this.#messageHandler.telemetryEvent(message)
   }
 
   dispose() {

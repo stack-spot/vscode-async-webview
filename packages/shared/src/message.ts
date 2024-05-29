@@ -6,6 +6,7 @@ export const messageType = {
   setState: 'vscode-webview:set-state',
   ready: 'vscode-webview-ready',
   stream: 'vscode-webview-stream',
+  telemetry: 'vscode-webview-telemetry',
 } as const
 
 export type MessageType = (typeof messageType)[keyof typeof messageType]
@@ -33,6 +34,12 @@ export interface WebviewStreamMessage extends WebviewMessage {
    * The order of messages may not be guaranteed. This ensures all of the streaming will be processed in an ordered fashion.
    */
   index: number,
+}
+
+export interface WebviewTelemetryMessage extends WebviewMessage {
+  eventName: string,
+  eventType: 'event' | 'error',
+  properties?: object,
 }
 
 function isValidMessageType(type: string) {

@@ -5,9 +5,9 @@ type Unpromisify<T> = T extends Promise<infer R> ? Unpromisify<R> : T
 // extract only the functions of the Bridge and make every return type a Promise if not already
 export type LinkedBridge<T> = Omit<{
   [K in keyof T as T[K] extends (...args: any) => any ? K : never]:
-    T[K] extends (...args: infer Args) => infer Return
-      ? (...args: Args) => Promise<Unpromisify<Return>>
-      : never
+  T[K] extends (...args: infer Args) => infer Return
+  ? (...args: Args) => Promise<Unpromisify<Return>>
+  : never
 }, 'dispose' | 'stream'>
 
 export interface VSCodeWebInterface<
@@ -59,4 +59,16 @@ export interface VSCodeWebInterface<
    * Client communicate that DOM are mounted
    */
   setViewReady?: () => void,
+  /**
+   * Logs a message to the console.
+   * 
+   * @param {string} text - The message to log.
+   */
+  log(text: string): void,
+  /**
+   * Logs an error message to the console.
+   * 
+   * @param {string} text - The error message to log.
+   */
+  error(text: string): void
 }

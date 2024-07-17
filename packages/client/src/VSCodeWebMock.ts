@@ -16,6 +16,15 @@ export class VSCodeWebMock<Bridge extends AsyncStateful = AsyncStateful> impleme
     this.mockedBridge = bridge
     this.bridge = this.createBridgeProxy()
   }
+  setViewReady?: (() => void) | undefined
+
+  log(text: string): void {
+    window.original?.log(text)
+  }
+  
+  error(text: string): void {
+    window.original?.error(text)
+  }
 
   private createBridgeProxy() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias

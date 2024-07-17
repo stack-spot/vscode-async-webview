@@ -18,6 +18,15 @@ import {
 } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
+declare global {
+  interface Window {
+    original?: {
+      log: (text: string) => void,
+      error: (text: string) => void,
+    },
+  }
+}
+
 interface StreamingHandler {
   onData: (data: string) => void,
   onError?: (error: string) => void,
@@ -42,7 +51,7 @@ type TelemetryEvent = (eventName: string, eventType: 'event' | 'error', properti
  * This class can be mocked with `VSCodeWebMock`.
  */
 export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements VSCodeWebInterface<Bridge> {
-  private state: StateTypeOf<Bridge>  
+  private state: StateTypeOf<Bridge>
   private listeners: Partial<{ [K in keyof StateTypeOf<Bridge>]: ((value: StateTypeOf<Bridge>[K]) => void)[] }> = {}
   private bridgeCalls: Map<string, ManualPromise> = new Map()
   readonly bridge = this.createBridgeProxy() as LinkedBridge<Bridge>
@@ -70,6 +79,16 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     this.telemetryEvent = telemetryEvent
   }
 
+  log(text: string): void {
+    // eslint-disable-next-line no-console
+    window.original?.log(text)
+  }
+
+  error(text: string): void {
+    // eslint-disable-next-line no-console
+    window.original?.error(text)
+  }
+
   /**
   * Sends a message to the vscode extension.
   * @param message the message to send.
@@ -94,7 +113,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     this.bridgeCalls.delete(message.id)
   }
 
-  private handleGetStateRequest(message : WebviewRequestMessage) {
+  private handleGetStateRequest(message: WebviewRequestMessage) {
     logger.debug('handling get state request:', message)
     try {
       VSCodeWeb.sendMessageToExtension(buildGetStateResponse(message.id, this.getState(message.id as keyof StateTypeOf<Bridge>)))
@@ -140,7 +159,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     window.addEventListener('message', ({ data }) => {
       const message = asWebViewMessage(data)
       switch (message?.type) {
-        case messageType.bridge: 
+        case messageType.bridge:
           this.handleBridgeResponse(message)
           break
         case messageType.getState:
@@ -153,7 +172,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
           this.handleTelemetry(message as WebviewTelemetryMessage)
           break
         case messageType.stream:
-          this.handleStream(message as WebviewStreamMessage)        
+          this.handleStream(message as WebviewStreamMessage)
       }
     })
   }
@@ -206,7 +225,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     VSCodeWeb.vscode.setState(this.state)
     Object.keys(this.listeners).forEach(key => this.runListeners(key, state[key]))
   }
-  
+
   subscribe<Key extends keyof StateTypeOf<Bridge>>(key: Key, listener: (value: StateTypeOf<Bridge>[Key]) => void): () => void {
     if (!this.listeners[key]) this.listeners[key] = []
     this.listeners[key]?.push(listener)

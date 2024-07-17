@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-		"lib": [
-			"ESNext",
+    "lib": [
+      "ESNext",
       "dom",
       "dom.iterable",
     ],
@@ -19,10 +19,11 @@
     "isolatedModules": true,
     "declaration": true,
     "sourceMap": true,
-		"rootDir": "src",
+    "rootDir": "src",
     "noImplicitOverride": true,
   },
   "include": [
-    "src"
+    "src",
+    "index.d.ts"
   ]
 }

@@ -101,8 +101,8 @@ importers:
   packages/react:
     dependencies:
       '@stack-spot/vscode-async-webview-client':
-        specifier: '>=0.7.2'
-        version: 0.7.3
+        specifier: '>=0.7.4'
+        version: 0.7.4
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -1493,8 +1493,8 @@ packages:
   '@sinonjs/fake-timers@8.1.0':
     resolution: {integrity: sha512-OAPJUAtgeINhh/TAlUID4QTs53Njm7xzddaVlEs/SXwgtiD1tW22zAB/W1wdqfrpmikgaWQ9Fw6Ws+hsiRm5Vg==}
 
-  '@stack-spot/vscode-async-webview-client@0.7.3':
-    resolution: {integrity: sha512-pvSuypvCcfhHBLd1IESxEKthk20wYxDRm6MDDp5gtM5UzebfUq1MAXrcCl2xOciaTzb+7dtTlwPbxmmmtdukvg==}
+  '@stack-spot/vscode-async-webview-client@0.7.4':
+    resolution: {integrity: sha512-benST7QumTxDurUVB3QkJaCIbzoagzn9Y579wOlA+5dEMrEkB1PEdVNVkZ+oZyD4eh2rF/Rt+tbbSXync0a73Q==}
 
   '@stack-spot/vscode-async-webview-shared@0.7.1':
     resolution: {integrity: sha512-UptBW0Q+FqhuAMkI9T+PdBU1A7xuEjy6dY+uVCcnSEqu7kSzdrrttVSshEw4EeDK9QNEcGGlHWcLPVOL4NQulA==}
@@ -8256,7 +8256,7 @@ snapshots:
     dependencies:
       '@sinonjs/commons': 1.8.6
 
-  '@stack-spot/vscode-async-webview-client@0.7.3':
+  '@stack-spot/vscode-async-webview-client@0.7.4':
     dependencies:
       '@stack-spot/vscode-async-webview-shared': 0.7.1
 

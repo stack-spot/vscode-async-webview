@@ -70,5 +70,5 @@ export interface VSCodeWebInterface<
    * 
    * @param {string} text - The error message to log.
    */
-  error(text: string): void
+  error(text: string): void,
 }

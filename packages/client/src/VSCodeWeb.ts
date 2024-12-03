@@ -18,15 +18,6 @@ import {
 } from '@stack-spot/vscode-async-webview-shared'
 import { LinkedBridge, VSCodeWebInterface } from './VSCodeWebInterface'
 
-declare global {
-  interface Window {
-    original?: {
-      log: (text: string) => void,
-      error: (text: string) => void,
-    },
-  }
-}
-
 interface StreamingHandler {
   onData: (data: string) => void,
   onError?: (error: string) => void,
@@ -80,12 +71,10 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
   }
 
   log(text: string): void {
-    // eslint-disable-next-line no-console
     window.original?.log(text)
   }
 
   error(text: string): void {
-    // eslint-disable-next-line no-console
     window.original?.error(text)
   }
 

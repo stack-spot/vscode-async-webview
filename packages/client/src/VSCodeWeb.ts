@@ -56,12 +56,17 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
   private bridgeCalls: Map<string, ManualPromise> = new Map()
   readonly bridge = this.createBridgeProxy() as LinkedBridge<Bridge>
   private streams = new Map<string, StreamingObject>()
+  private telemetryEvent: TelemetryEvent
+  private windowMessageListener?: (ev: MessageEvent<any>) => any
+  private unloadListener?: () => void
+  private disposed = false
+  private static instance?: VSCodeWeb<any>
   /**
    * Original vscode object obtained by calling `acquireVsCodeApi()`.
    * Will be available after the first time the class is instantiated.
    */
   static vscode: any
-  private telemetryEvent: TelemetryEvent
+  
 
   constructor(initialState: StateTypeOf<Bridge>, telemetryEvent: TelemetryEvent, sendReadyMessage = true) {
     if (VSCodeWeb.vscode) {
@@ -70,10 +75,14 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
       // @ts-ignore
       VSCodeWeb.vscode = acquireVsCodeApi()
     }
+
+    VSCodeWeb.instance = this
+
     const stored = VSCodeWeb.vscode.getState()
     if (!stored) VSCodeWeb.vscode.setState(initialState)
     this.state = VSCodeWeb.vscode.getState()
     this.addWindowListener()
+    this.setupAutoDispose()
     if (sendReadyMessage) this.setViewReady()
 
     this.telemetryEvent = telemetryEvent
@@ -87,6 +96,17 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
   error(text: string): void {
     // eslint-disable-next-line no-console
     window.original?.error(text)
+  }
+
+  /**
+   * Sets up automatic disposal when the window unloads
+   */
+  private setupAutoDispose() {
+    // Clean up when the webview is being destroyed
+    this.unloadListener = () => {
+      this.dispose()
+    }
+    window.addEventListener('beforeunload', this.unloadListener)    
   }
 
   /**
@@ -156,7 +176,7 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
   }
 
   private addWindowListener() {
-    window.addEventListener('message', ({ data }) => {
+    this.windowMessageListener = ({ data }) => {
       const message = asWebViewMessage(data)
       switch (message?.type) {
         case messageType.bridge:
@@ -174,30 +194,40 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
         case messageType.stream:
           this.handleStream(message as WebviewStreamMessage)
       }
-    })
+    }
+    window.addEventListener('message', this.windowMessageListener)
   }
 
   private createBridgeProxy() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    const methodCache = new Map<string, Function>()
+
     return new Proxy({}, {
       get(_, property) {
         const methodName = String(property)
-        const manualPromise = new ManualPromise()
-        // fixme: don't create this function on every get, instead, save it and return it if has already been created
-        return (...args: any[]) => {
+
+        if (methodCache.has(methodName)) {
+          return methodCache.get(methodName)
+        }
+
+        const fn = (...args: any[]) => {
           logger.debug('making call to bridge:', methodName, ...args)
           try {
             const message = buildBridgeRequest(methodName, args)
+            const manualPromise = new ManualPromise()
             self.bridgeCalls.set(message.id, manualPromise)
             logger.debug('sending bridge message:', message)
             VSCodeWeb.sendMessageToExtension(message)
             return manualPromise.promise
           } catch (error) {
-            manualPromise.reject(`Can't call "${methodName}" on the bridge, please make sure its parameters are serializable.`)
-            throw error
+            throw new Error(`Can't call "${methodName}" on the bridge, please make sure its parameters are serializable.`)
           }
         }
+
+        methodCache.set(methodName, fn)
+        return fn
       },
     })
   }
@@ -240,5 +270,60 @@ export class VSCodeWeb<Bridge extends AsyncStateful = AsyncStateful> implements 
     const stream = this.streams.get(id)!
     stream.handler = { onData, onError, onComplete }
     if (stream.queue.size) this.processStreamQueue(stream)
+  }
+
+  /**
+   * Disposes all resources and cleans up event listeners
+   */
+  public dispose() {
+    if (this.disposed) return
+    this.disposed = true
+    
+    logger.debug('Disposing VSCodeWeb')
+    
+    // Remove event listeners
+    if (this.windowMessageListener) {
+      window.removeEventListener('message', this.windowMessageListener)
+      this.windowMessageListener = undefined
+    }
+    
+    if (this.unloadListener) {
+      window.removeEventListener('beforeunload', this.unloadListener)
+      this.unloadListener = undefined
+    }
+    
+    this.bridgeCalls.clear()
+    
+    // Clear all streams
+    this.streams.forEach((stream) => {
+      if (stream.handler?.onError) {
+        stream.handler.onError('VSCodeWeb is being disposed')
+      }
+    })
+    this.streams.clear()
+    
+    // Clear listeners
+    this.listeners = {}
+    
+    // Clear static instance
+    if (VSCodeWeb.instance === this) {
+      VSCodeWeb.instance = undefined
+    }
+    
+    logger.debug('VSCodeWeb disposed successfully')
+  }
+
+  /**
+   * Static method to get the current instance
+   */
+  static getInstance<T extends AsyncStateful>(): VSCodeWeb<T> | undefined {
+    return VSCodeWeb.instance as VSCodeWeb<T> | undefined
+  }
+
+  /**
+   * Static method to dispose the current instance
+   */
+  static disposeInstance() {
+    VSCodeWeb.instance?.dispose()
   }
 }

@@ -1,4 +1,5 @@
 import { WebviewOptions, WebviewView, WebviewViewProvider, window } from 'vscode'
+import { logger } from '@stack-spot/vscode-async-webview-shared'
 import { ViewOptions } from './types'
 import { VSCodeWebview } from './VSCodeWebview'
 import { VSCodeWebviewBridge } from './VSCodeWebviewBridge'
@@ -10,6 +11,7 @@ export class VSCodeViewProvider<
   Bridge extends VSCodeWebviewBridge = VSCodeWebviewBridge
 > extends VSCodeWebview<Bridge> implements WebviewViewProvider {
   private view: WebviewView | undefined
+  private isResolving = false
 
   constructor(options: ViewOptions<Bridge>) {
     super(options)
@@ -19,17 +21,34 @@ export class VSCodeViewProvider<
   }
 
   async resolveWebviewView(view: WebviewView) {
-    this.view = view
-    const { webview } = view
-    const html = this.getHTML() ?? await this.buildHtml(webview.asWebviewUri(this.baseUri))
-    this.buildBridge(webview)
-    webview.options = this.options as WebviewOptions
-    webview.html = html
-    view.onDidDispose(() => {
-      this.view = undefined
-      this.bridge?.dispose()
-      this.bridge = undefined
-    })
+    if (this.isResolving) {
+      logger.warn('resolveWebviewView called while already resolving')
+      return
+    }
+
+    this.isResolving = true
+
+    try {
+      if (this.bridge) {
+        this.bridge.dispose()
+        this.bridge = undefined
+      }
+
+      this.view = view
+      const { webview } = view
+      const html = this.getHTML() ?? await this.buildHtml(webview.asWebviewUri(this.baseUri))
+      this.buildBridge(webview)
+      webview.options = this.options as WebviewOptions
+      webview.html = html
+
+      view.onDidDispose(() => {
+        this.view = undefined
+        this.bridge?.dispose()
+        this.bridge = undefined
+      })
+    } finally {
+      this.isResolving = false
+    } 
   }
 
   /**

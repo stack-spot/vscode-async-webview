@@ -1,5 +1,5 @@
 import { uniqueId } from 'lodash'
-import { 
+import {
   messageType,
   WebviewRequestMessage,
   WebviewResponseMessage,
@@ -15,6 +15,10 @@ import {
   WebviewTelemetryMessage,
 } from '@stack-spot/vscode-async-webview-shared'
 import { AnyFunction } from './types'
+
+interface MessageListenerDisposable {
+  dispose(): void,
+}
 
 interface Dependencies {
   /**
@@ -37,6 +41,7 @@ interface Dependencies {
  * Send/receive messages to/from the client.
  */
 export class MessageHandler {
+  private readonly MAX_QUEUE_SIZE = 100
   private readonly deps: Dependencies
   private readonly getStateCalls: Map<string, ManualPromise> = new Map()
   private readonly setStateCalls: Map<string, ManualPromise<void>> = new Map()
@@ -46,17 +51,28 @@ export class MessageHandler {
    */
   private queue: WebviewMessage[] = []
   private streaming = new Map<string, { index: number, pending?: Omit<WebviewStreamMessage, 'index' | 'type'>, result: string }>()
-  
+  private messageListener?: MessageListenerDisposable
+  private disposed = false
+
   constructor(deps: Dependencies) {
     this.deps = deps
     this.listen()
   }
 
   private async sendMessageToClient(message: WebviewMessage, onNotSent?: () => void) {
+    // Don't send messages if already disposed
+    if (this.disposed) return
+
     const sent = await this.deps.sendMessageToClient(message)
     if (!sent) {
       if (onNotSent) onNotSent()
-      else this.queue.push(message)
+      else {
+        if (this.queue.length >= this.MAX_QUEUE_SIZE) {
+          this.queue.shift() // Remove oldest message if queue is full
+          logger.warn('Message queue full, dropping oldest message')
+        }
+        this.queue.push(message)
+      }
     }
   }
 
@@ -113,7 +129,11 @@ export class MessageHandler {
   }
 
   private listen() {
-    this.deps.listenToMessagesFromClient(async (message) => {
+    // Store the disposable if returned, to clean it up later
+    const result = this.deps.listenToMessagesFromClient(async (message) => {
+      // Don't process messages if already disposed
+      if (this.disposed) return
+
       switch (message?.type) {
         case messageType.bridge:
           await this.handleRequestToBridge(message)
@@ -128,17 +148,42 @@ export class MessageHandler {
           this.handleClientReadyness()
       }
     })
+
+    // Only store if a disposable was returned (not void/undefined)
+    // We need to handle this without testing void for truthiness
+    if (result !== undefined && result !== null) {
+      const disposable = result as MessageListenerDisposable
+      if ('dispose' in disposable && typeof disposable.dispose === 'function') {
+        this.messageListener = disposable
+      }
+    }
   }
 
   dispose() {
+    if (this.disposed) return // Prevent double disposal
+    this.disposed = true
+
+    // Reject all pending promises
     this.getStateCalls.forEach((value, key) => {
       value.reject(`The webview closed before the state "${String(key)}" could be retrieved.`)
     })
     this.setStateCalls.forEach((value) => {
       value.reject('The webview closed before the state could be set.')
     })
+
+    // Clear all maps
     this.getStateCalls.clear()
     this.setStateCalls.clear()
+    this.streaming.clear()
+
+    // Clear the queue
+    this.queue = []
+
+    // Dispose the message listener if it exists
+    if (this.messageListener) {
+      this.messageListener.dispose()
+      this.messageListener = undefined
+    }
   }
 
   getState(name: string): Promise<any> {
@@ -173,6 +218,18 @@ export class MessageHandler {
   }
 
   stream(message: Omit<WebviewStreamMessage, 'index' | 'type'>) {
+    if (this.disposed) return
+
+    if (this.streaming.size > 50) {
+      const toDelete: string[] = []
+      this.streaming.forEach((value, key) => {
+        if (!value.pending && value.result === '') {
+          toDelete.push(key)
+        }
+      })
+      toDelete.forEach(key => this.streaming.delete(key))
+    }
+
     const currentStreaming = this.streaming.get(message.id) ?? { index: -1, result: '' }
     this.streaming.set(message.id, currentStreaming)
     currentStreaming.result += message.content

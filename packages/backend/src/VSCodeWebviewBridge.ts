@@ -50,13 +50,11 @@ export abstract class VSCodeWebviewBridge<StateType extends Record<string, any> 
         return typeof member === 'function' ? (...args: any[]) => (member as AnyFunction).apply(this, args) : undefined
       },
       sendMessageToClient: async (message) => webview.postMessage.apply(webview, [message]),
-      listenToMessagesFromClient: (listener) => {
-        webview.onDidReceiveMessage((data) => {
-          logger.debug('received message from client:', data)
-          const message = asWebViewMessage(data)
-          if (message) listener(message)
-        })
-      },
+      listenToMessagesFromClient: (listener) => webview.onDidReceiveMessage((data) => {
+        logger.debug('received message from client:', data)
+        const message = asWebViewMessage(data)
+        if (message) listener(message)
+      }),
     })
   }
 

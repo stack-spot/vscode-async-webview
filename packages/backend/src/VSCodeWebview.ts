@@ -70,7 +70,7 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
     this.index = index
     this.options = {
       enableScripts: true,
-      retainContextWhenHidden: true,
+      retainContextWhenHidden: false,
       localResourceRoots: [this.baseUri],
       ...options,
     }
@@ -130,7 +130,20 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
   }
 
   protected treatHTML(html: string, baseSrc: Uri): string {
-    return html.replace('<head>', `<head><base href="${baseSrc}/">`)
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' ${baseSrc}; style-src 'unsafe-inline' ${baseSrc}; img-src ${baseSrc} data: https:; font-src ${baseSrc};">`
+    return html
+      .replace('<head>', `<head>${csp}<base href="${baseSrc}/">`)
+      .replace('</body>', `
+      <script>
+        // Debug script for VDI
+        console.log('[WEBVIEW] Script executing');
+        window.onerror = (msg, url, line, col, error) => {
+          console.error('[WEBVIEW ERROR]', msg, error);
+          return true;
+        };
+      </script>
+      </body>
+    `)
   }
 
   /**

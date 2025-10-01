@@ -14,7 +14,9 @@ export class VSCodeViewProvider<
   constructor(options: ViewOptions<Bridge>) {
     super(options)
     if (options.type) {
-      options.context.subscriptions.push(window.registerWebviewViewProvider(options.type, this))
+      options.context.subscriptions.push(window.registerWebviewViewProvider(options.type, this, {
+                webviewOptions: { retainContextWhenHidden: true }
+            }))
     }
   }
 

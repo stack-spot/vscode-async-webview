@@ -1,5 +1,11 @@
 # @stack-spot/vscode-async-webview-react
 
+## 0.8.2
+
+### Minor Changes
+
+- snyk high vulnerability fix
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,2 +1,7 @@
 packages:
-  - 'packages/*'
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@vscode/vsce-sign'
+  - esbuild
+  - keytar

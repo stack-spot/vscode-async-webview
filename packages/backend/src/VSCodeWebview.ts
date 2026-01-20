@@ -48,8 +48,7 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
   private html: string | undefined
   private readonly index: string
   private bridgePromise: ManualPromise<Bridge> | undefined
-  private static htmlCache = new Map<string, string>()
-
+  
   constructor({
     path,
     index = 'index.html',
@@ -77,16 +76,8 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
   }
 
   protected async buildHtml(baseSrc: Uri) {
-    const cacheKey = `${this.baseUri.path}/${this.index}`
-
-    if (VSCodeWebview.htmlCache.has(cacheKey)) {
-      this.html = this.treatHTML(VSCodeWebview.htmlCache.get(cacheKey)!, baseSrc)
-      return this.html
-    }
-
     try {
       const htmlText = await this.htmlPromise
-      VSCodeWebview.htmlCache.set(cacheKey, htmlText)
       this.html = this.treatHTML(htmlText, baseSrc)
     } catch (error: any) {
       window.showErrorMessage('There was an error while loading the html for the webview. This is a bug, please report it to the team.')

@@ -36,7 +36,7 @@ interface Options<Bridge extends VSCodeWebviewBridge> extends ViewOptions<Bridge
  * To show a panel with a webview, first create the `VSCodeWebview` with the required config and then call `VSCodeWebview#show()`.
  */
 export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBridge> {
-  protected readonly supportVDI: boolean = true
+  protected supportVDI: boolean = true
   protected readonly baseUri: Uri
   private readonly title: string
   readonly type: string

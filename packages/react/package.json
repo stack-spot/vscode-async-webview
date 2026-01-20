@@ -1,6 +1,6 @@
 {
   "name": "@stack-spot/vscode-async-webview-react",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "repository": "github:stack-spot/vscode-async-webview",
   "main": "out/index.js",
   "module": "out/index.mjs",
@@ -11,7 +11,6 @@
   "peerDependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
     "@stack-spot/vscode-async-webview-client": ">=0.7.2"
   },
   "devDependencies": {

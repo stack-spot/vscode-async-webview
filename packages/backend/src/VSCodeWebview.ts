@@ -36,6 +36,7 @@ interface Options<Bridge extends VSCodeWebviewBridge> extends ViewOptions<Bridge
  * To show a panel with a webview, first create the `VSCodeWebview` with the required config and then call `VSCodeWebview#show()`.
  */
 export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBridge> {
+  protected readonly supportVDI: boolean = true
   protected readonly baseUri: Uri
   private readonly title: string
   readonly type: string
@@ -121,7 +122,8 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
   }
 
   protected treatHTML(html: string, baseSrc: Uri): string {
-    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' ${baseSrc}; style-src 'unsafe-inline' ${baseSrc}; img-src ${baseSrc} data: https:; font-src ${baseSrc};">`
+    if (this.supportVDI) {
+      const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' ${baseSrc}; style-src 'unsafe-inline' ${baseSrc}; img-src ${baseSrc} data: https:; font-src ${baseSrc};">`
     return html
       .replace('<head>', `<head>${csp}<base href="${baseSrc}/">`)
       .replace('</body>', `
@@ -135,6 +137,8 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
       </script>
       </body>
     `)
+    }
+    return html.replace('<head>', `<head><base href="${baseSrc}/">`)
   }
 
   /**

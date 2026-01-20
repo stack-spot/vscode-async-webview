@@ -48,6 +48,7 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
   private html: string | undefined
   private readonly index: string
   private bridgePromise: ManualPromise<Bridge> | undefined
+  private static htmlCache = new Map<string, string>()
 
   constructor({
     path,
@@ -69,14 +70,23 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
     this.index = index
     this.options = {
       enableScripts: true,
+      retainContextWhenHidden: false,
       localResourceRoots: [this.baseUri],
       ...options,
     }
   }
 
   protected async buildHtml(baseSrc: Uri) {
+    const cacheKey = `${this.baseUri.path}/${this.index}`
+
+    if (VSCodeWebview.htmlCache.has(cacheKey)) {
+      this.html = this.treatHTML(VSCodeWebview.htmlCache.get(cacheKey)!, baseSrc)
+      return this.html
+    }
+
     try {
       const htmlText = await this.htmlPromise
+      VSCodeWebview.htmlCache.set(cacheKey, htmlText)
       this.html = this.treatHTML(htmlText, baseSrc)
     } catch (error: any) {
       window.showErrorMessage('There was an error while loading the html for the webview. This is a bug, please report it to the team.')
@@ -120,7 +130,20 @@ export class VSCodeWebview<Bridge extends VSCodeWebviewBridge = VSCodeWebviewBri
   }
 
   protected treatHTML(html: string, baseSrc: Uri): string {
-    return html.replace('<head>', `<head><base href="${baseSrc}/">`)
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' ${baseSrc}; style-src 'unsafe-inline' ${baseSrc}; img-src ${baseSrc} data: https:; font-src ${baseSrc};">`
+    return html
+      .replace('<head>', `<head>${csp}<base href="${baseSrc}/">`)
+      .replace('</body>', `
+      <script>
+        // Debug script for VDI
+        console.log('[WEBVIEW] Script executing');
+        window.onerror = (msg, url, line, col, error) => {
+          console.error('[WEBVIEW ERROR]', msg, error);
+          return true;
+        };
+      </script>
+      </body>
+    `)
   }
 
   /**

@@ -1,6 +1,9 @@
 import dts from 'rollup-plugin-dts'
 import esbuild from 'rollup-plugin-esbuild'
-import packageJson from './package.json' assert { type: 'json' }
+
+import { createRequire } from 'module'
+const require = createRequire(import.meta.url)
+const packageJson = require('./package.json')
 
 const name = packageJson.main.replace(/\.js$/, '')
 
@@ -10,7 +13,7 @@ const bundle = config => ({
   external: id => !/^[./]/.test(id),
 })
 
-// eslint-disable-next-line import/no-default-export
+// eslint-disable-next-line import/no-default-export, import/no-anonymous-default-export
 export default [
   bundle({
     plugins: [esbuild()],

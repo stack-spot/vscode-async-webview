@@ -13,10 +13,16 @@ export class VSCodeViewProvider<
   private view: WebviewView | undefined
   private isResolving = false
 
-  constructor(options: ViewOptions<Bridge>) {
+  constructor(options: ViewOptions<Bridge> & { retainContextWhenHidden?: boolean }) {
     super(options)
     if (options.type) {
-      options.context.subscriptions.push(window.registerWebviewViewProvider(options.type, this))
+      options.context.subscriptions.push(
+        window.registerWebviewViewProvider(
+          options.type,
+          this,
+          { webviewOptions: { retainContextWhenHidden: options.retainContextWhenHidden },
+        },
+      ))
     }
   }
 

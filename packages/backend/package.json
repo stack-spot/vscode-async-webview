@@ -18,7 +18,7 @@
     "@types/lodash": "^4.14.195",
     "@types/node": "20.2.5",
     "@types/vscode": "^1.80.0",
-    "esbuild": "^0.18.16",
+    "esbuild": "^0.28.1",
     "jest": "^29.6.2",
     "rollup": "^3.26.3",
     "rollup-plugin-dts": "^5.3.0",

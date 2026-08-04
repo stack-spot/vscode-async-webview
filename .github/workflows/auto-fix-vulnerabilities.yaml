@@ -1,0 +1,17 @@
+name: Auto Fix | Vulnerabilities
+run-name: Auto Fix | Vulnerabilities | ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  auto-fix-notify:
+    uses: ZupIT/dx-workflows/.github/workflows/reusable-auto-fix-vulnerabilities-pr.yml@v0
+    with:
+      runner: runner-self-hosted-idp-prd
+    secrets:
+      snyk-client-id: ${{ secrets.SNYK_CLIENT_ID }}
+      snyk-client-secret: ${{ secrets.SNYK_CLIENT_SECRET }}
+      snyk-org-id: ${{ secrets.SNYK_ORGANIZATION_ID }}

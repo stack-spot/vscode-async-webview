@@ -16,6 +16,6 @@
     "esbuild": "^0.18.16",
     "rollup": "^3.26.3",
     "rollup-plugin-dts": "^5.3.0",
-    "rollup-plugin-esbuild": "^5.0.0"
+    "rollup-plugin-esbuild": "^6.2.0"
   }
 }
